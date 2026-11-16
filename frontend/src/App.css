@@ -1,0 +1,14 @@
+/* App.css - Top-level layout adjustments */
+
+/* Landing page needs full width (no container padding) */
+.landing-page .main-content {
+  padding: 0;
+  max-width: 100%;
+}
+
+/* TopNav sticky behavior */
+.top-nav-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}

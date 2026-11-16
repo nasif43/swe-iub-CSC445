@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#0c3d24"/>
+  <circle cx="256" cy="256" r="196" fill="#0f5c34"/>
+  <path d="M256 152l-92 120h52l-34 44 34 44h80l34-44-34-44h52l-92-120z" fill="#ffffff" opacity="0.0"/>
+  <!-- motorbike glyph -->
+  <g fill="none" stroke="#00E56A" stroke-width="26" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="142" cy="330" r="44"/>
+    <circle cx="370" cy="330" r="44"/>
+    <path d="M142 330h36l32-74h36l28 40M262 256h-52l-22 74M262 256l28 40M290 296h50l38-40-26-46h-60"/>
+  </g>
+  <!-- road line -->
+  <g stroke="#00B14F" stroke-width="14" stroke-linecap="round">
+    <path d="M118 400h276"/>
+  </g>
+</svg>
