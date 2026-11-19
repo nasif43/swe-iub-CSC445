@@ -1,6 +1,6 @@
-from datetime import datetime
+from pydantic import BaseModel, ConfigDict
 from typing import List, Optional
-from pydantic import BaseModel
+from datetime import datetime
 
 
 class UserBase(BaseModel):
@@ -17,6 +17,7 @@ class UserCreate(UserBase):
 
 class User(UserBase):
     id: int
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ListingBase(BaseModel):
@@ -42,6 +43,7 @@ class ListingCreate(ListingBase):
 class Listing(ListingBase):
     id: int
     owner_id: int
+    model_config = ConfigDict(from_attributes=True)
 
 
 class BookingBase(BaseModel):
@@ -61,6 +63,7 @@ class Booking(BookingBase):
     start_time: datetime
     end_time: Optional[datetime] = None
     total_fare: Optional[float] = None
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PassengerTripBase(BaseModel):
@@ -79,3 +82,5 @@ class PassengerTripCreate(PassengerTripBase):
 class PassengerTrip(PassengerTripBase):
     id: int
     status: str
+    model_config = ConfigDict(from_attributes=True)
+

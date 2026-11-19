@@ -8,7 +8,8 @@ SQLALCHEMY_DATABASE_URL = os.getenv(
 
 try:
     engine = create_engine(SQLALCHEMY_DATABASE_URL)
-    engine.connect()
+    with engine.connect():
+        pass
 except Exception as e:
     print(f"Warning: PostgreSQL connection failed, falling back to SQLite. Error: {e}")
     SQLALCHEMY_DATABASE_URL = "sqlite:///./ourbike.db"
@@ -26,3 +27,4 @@ def get_db():
         yield db
     finally:
         db.close()
+

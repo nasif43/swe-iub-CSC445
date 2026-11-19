@@ -1,12 +1,12 @@
-from typing import List
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
+from typing import List
 
-import crud
-from database import SessionLocal, engine
 import models
 import schemas
+import crud
+from database import SessionLocal, engine
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -31,16 +31,16 @@ def get_db():
 
 @app.post("/users/", response_model=schemas.User)
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
-    if hasattr(crud, "get_user_by_email"):
-        db_user = crud.get_user_by_email(db, email=user.email)
-        if db_user:
-            raise HTTPException(status_code=400, detail="Email already registered")
+    db_user = db.query(models.User).filter(models.User.email == user.email).first()
+    if db_user:
+        raise HTTPException(status_code=400, detail="Email already registered")
     return crud.create_user(db=db, user=user)
 
 
 @app.get("/users/", response_model=List[schemas.User])
 def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    return crud.get_users(db, skip=skip, limit=limit)
+    users = crud.get_users(db, skip=skip, limit=limit)
+    return users
 
 
 @app.get("/users/{user_id}", response_model=schemas.User)
@@ -60,7 +60,8 @@ def create_listing_for_user(
 
 @app.get("/listings/", response_model=List[schemas.Listing])
 def read_listings(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    return crud.get_listings(db, skip=skip, limit=limit)
+    listings = crud.get_listings(db, skip=skip, limit=limit)
+    return listings
 
 
 @app.post("/bookings/", response_model=schemas.Booking)
@@ -70,14 +71,17 @@ def create_booking(booking: schemas.BookingCreate, db: Session = Depends(get_db)
 
 @app.get("/users/{user_id}/bookings/", response_model=List[schemas.Booking])
 def read_bookings(user_id: int, db: Session = Depends(get_db)):
-    return crud.get_bookings(db, user_id=user_id)
+    return crud.get_bookings(db=db, user_id=user_id)
 
 
 @app.put("/bookings/{booking_id}/status", response_model=schemas.Booking)
 def update_booking(
     booking_id: int, status: str, db: Session = Depends(get_db)
 ):
-    return crud.update_booking_status(db=db, booking_id=booking_id, status=status)
+    db_booking = crud.update_booking_status(db=db, booking_id=booking_id, status=status)
+    if not db_booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    return db_booking
 
 
 @app.post("/passenger-trips/", response_model=schemas.PassengerTrip)
@@ -87,7 +91,9 @@ def create_passenger_trip(
     return crud.create_passenger_trip(db=db, trip=trip)
 
 
-@app.get("/users/{user_id}/passenger-trips/", response_model=List[schemas.PassengerTrip])
+@app.get(
+    "/users/{user_id}/passenger-trips/", response_model=List[schemas.PassengerTrip]
+)
 def read_passenger_trips(user_id: int, db: Session = Depends(get_db)):
     return crud.get_passenger_trips(db=db, user_id=user_id)
 
@@ -141,3 +147,4 @@ def seed_database(db: Session = Depends(get_db)):
         owner_id=owner.id,
     )
     return {"message": "Database seeded"}
+

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { ChevronLeft, Save, Clock, MapPin, DollarSign, Sliders, CalendarDays, Lock, CheckCircle2 } from 'lucide-react';
+import { ChevronLeft, Save, Clock, MapPin, DollarSign, Sliders, CalendarDays, Lock, CheckCircle2, Radio } from 'lucide-react';
 
 const ALL_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const DEFAULT_SLOT = { from: '08:00', to: '20:00' };
@@ -171,9 +171,8 @@ export default function VehicleSettings() {
           {[
             { label: 'Hourly Rate (৳)', key: 'hourlyRate' },
             { label: 'Wear & Tear Charge (৳/hr)', key: 'wearTearRate' },
-            { label: 'Max Renter Radius (km)', key: 'maxRadiusKm' },
           ].map(field => (
-            <div key={field.key} style={{ gridColumn: field.key === 'maxRadiusKm' ? '1 / -1' : 'auto' }}>
+            <div key={field.key}>
               <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>{field.label}</label>
               <input
                 type="number"
@@ -183,6 +182,76 @@ export default function VehicleSettings() {
               />
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* ── Geofence / Tracking Radius ── */}
+      <div style={{ background: 'white', borderRadius: 20, border: '2px solid #3B82F6', padding: '24px 28px', boxShadow: '0 2px 12px rgba(59,130,246,0.1)', marginBottom: 16 }}>
+        <SectionTitle icon={<Radio size={17} />} title="Live Tracking & Geofence" />
+
+        <div style={{ background: '#EFF6FF', borderRadius: 12, padding: '14px 16px', marginBottom: 20, fontSize: 13, color: '#1D4ED8', fontWeight: 600, display: 'flex', gap: 8 }}>
+          <Radio size={15} style={{ flexShrink: 0, marginTop: 1 }} />
+          <div>
+            While your bike is rented, you can <b>live-track its GPS location</b> from the Dashboard. If the renter takes the bike beyond the allowed radius, the app will <b>play an alarm</b> until it returns to the zone.
+          </div>
+        </div>
+
+        <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8 }}>
+          MAXIMUM ALLOWED RADIUS
+        </label>
+
+        {/* Radius slider */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 10 }}>
+          <input
+            type="range"
+            min={1}
+            max={50}
+            step={1}
+            value={settings.maxRadiusKm}
+            onChange={e => setSettings(s => ({ ...s, maxRadiusKm: Number(e.target.value) }))}
+            style={{ flex: 1, accentColor: '#3B82F6', height: 6, cursor: 'pointer' }}
+          />
+          <div style={{
+            minWidth: 72, textAlign: 'center', fontWeight: 900, fontSize: 22,
+            color: '#3B82F6', background: '#EFF6FF', borderRadius: 10, padding: '6px 12px',
+            fontVariantNumeric: 'tabular-nums',
+          }}>
+            {settings.maxRadiusKm} km
+          </div>
+        </div>
+
+        {/* Tick marks */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text-muted)', marginBottom: 16, paddingRight: 88 }}>
+          {[1, 10, 20, 30, 40, 50].map(v => <span key={v}>{v}</span>)}
+        </div>
+
+        {/* Zone preview pills */}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {[
+            { label: 'Campus only', km: 2, desc: 'Within campus gates' },
+            { label: 'Nearby area', km: 5, desc: 'Up to 5 km' },
+            { label: 'City zone', km: 15, desc: 'Wide city area' },
+            { label: 'Full city', km: 30, desc: 'Anywhere in the city' },
+          ].map(preset => (
+            <button
+              key={preset.km}
+              onClick={() => setSettings(s => ({ ...s, maxRadiusKm: preset.km }))}
+              style={{
+                padding: '6px 12px', borderRadius: 999,
+                border: `1.5px solid ${settings.maxRadiusKm === preset.km ? '#3B82F6' : '#E5E7EB'}`,
+                background: settings.maxRadiusKm === preset.km ? '#3B82F6' : 'white',
+                color: settings.maxRadiusKm === preset.km ? 'white' : 'var(--text-muted)',
+                fontSize: 12, fontWeight: 600, cursor: 'pointer',
+              }}
+            >
+              {preset.label} ({preset.km} km)
+            </button>
+          ))}
+        </div>
+
+        <div style={{ marginTop: 16, fontSize: 12, color: '#6B7280', display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+          <MapPin size={12} style={{ flexShrink: 0, marginTop: 1 }} />
+          Alarm triggers when the bike is more than <b style={{ color: '#3B82F6' }}>&nbsp;{settings.maxRadiusKm} km&nbsp;</b> from its home/garage location.
         </div>
       </div>
 

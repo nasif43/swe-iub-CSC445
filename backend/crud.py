@@ -1,7 +1,8 @@
-import datetime
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 import models
 import schemas
+from datetime import datetime
 
 
 def get_user(db: Session, user_id: int):
@@ -13,12 +14,14 @@ def get_users(db: Session, skip: int = 0, limit: int = 100):
 
 
 def create_user(db: Session, user: schemas.UserCreate):
+    fake_hashed_password = user.password + "_fakehash"
     db_user = models.User(
         name=user.name,
         email=user.email,
         phone=user.phone,
         role=user.role,
-        password_hash=user.password + "_fakehash",
+        rating=user.rating,
+        password_hash=fake_hashed_password,
     )
     db.add(db_user)
     db.commit()
@@ -42,8 +45,10 @@ def get_bookings(db: Session, user_id: int):
     return (
         db.query(models.Booking)
         .filter(
-            (models.Booking.renter_id == user_id)
-            | (models.Booking.listing.has(owner_id=user_id))
+            or_(
+                models.Booking.renter_id == user_id,
+                models.Booking.listing.has(owner_id=user_id),
+            )
         )
         .all()
     )
@@ -58,20 +63,25 @@ def create_booking(db: Session, booking: schemas.BookingCreate):
 
 
 def update_booking_status(db: Session, booking_id: int, status: str):
-    db_booking = db.query(models.Booking).filter(models.Booking.id == booking_id).first()
-    if db_booking:
-        db_booking.status = status
-        if status == "completed":
-            db_booking.end_time = datetime.datetime.utcnow()
-            duration_hours = (
-                db_booking.end_time - db_booking.start_time
-            ).total_seconds() / 3600
-            listing = db_booking.listing
+    db_booking = (
+        db.query(models.Booking).filter(models.Booking.id == booking_id).first()
+    )
+    if not db_booking:
+        return None
+    db_booking.status = status
+    if status == "completed":
+        db_booking.end_time = datetime.utcnow()
+        duration_hours = max(
+            1.0,
+            (db_booking.end_time - db_booking.start_time).total_seconds() / 3600.0,
+        )
+        listing = db_booking.listing
+        if listing:
             db_booking.total_fare = (
                 listing.hourly_rate + listing.wear_tear_rate
             ) * duration_hours
-        db.commit()
-        db.refresh(db_booking)
+    db.commit()
+    db.refresh(db_booking)
     return db_booking
 
 
@@ -79,8 +89,10 @@ def get_passenger_trips(db: Session, user_id: int):
     return (
         db.query(models.PassengerTrip)
         .filter(
-            (models.PassengerTrip.passenger_id == user_id)
-            | (models.PassengerTrip.renter_id == user_id)
+            or_(
+                models.PassengerTrip.passenger_id == user_id,
+                models.PassengerTrip.renter_id == user_id,
+            )
         )
         .all()
     )
@@ -92,3 +104,4 @@ def create_passenger_trip(db: Session, trip: schemas.PassengerTripCreate):
     db.commit()
     db.refresh(db_trip)
     return db_trip
+

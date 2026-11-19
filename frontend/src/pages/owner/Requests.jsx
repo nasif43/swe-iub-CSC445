@@ -12,8 +12,9 @@ export default function Requests() {
   const [tab, setTab] = useState('incoming');
   const [selectedReq, setSelectedReq] = useState(null);
 
-  const myListings = data.listings.filter(l => l.ownerId === user.id);
-  const myRequests = data.incomingRequests.filter(req => myListings.some(l => l.id === req.vehicleId));
+  const isDemoOwner = user?.id === 'u1';
+  const myListings = data.listings.filter(l => l.ownerId === user?.id || (isDemoOwner && (!l.ownerId || l.ownerId === 'u1')));
+  const myRequests = data.incomingRequests.filter(req => req.ownerId === user?.id || myListings.some(l => l.id === req.vehicleId) || isDemoOwner);
 
   const incoming = myRequests.filter(req => req.status === 'pending');
   const past = myRequests.filter(req => req.status !== 'pending');
@@ -29,7 +30,7 @@ export default function Requests() {
   };
 
   const renderRequestCard = (req, isIncoming) => {
-    const vehicle = myListings.find(l => l.id === req.vehicleId);
+    const vehicle = myListings.find(l => l.id === req.vehicleId) || data.listings.find(l => l.id === req.vehicleId);
     const isExpanded = selectedReq === req.id;
     const isAccepted = req.status === 'accepted';
 
@@ -61,7 +62,7 @@ export default function Requests() {
                 {isAccepted && <span className="badge badge-green">Accepted</span>}
               </div>
               <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 2 }}>
-                wants to rent <strong>{vehicle?.vehicleName}</strong>
+                wants to rent <strong>{vehicle?.vehicleName || req.vehicleName || 'Vehicle'}</strong>
               </div>
               <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
                 {req.estimatedDuration}h · <span style={{ fontWeight: 700, color: 'var(--primary)' }}>৳{req.estimatedFare}</span>

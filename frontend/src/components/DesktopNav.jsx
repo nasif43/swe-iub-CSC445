@@ -21,6 +21,7 @@ export default function DesktopNav() {
       { to: '/renter/dashboard', label: 'Dashboard' },
       { to: '/renter/requests', label: 'Requests' },
       { to: '/renter/browse', label: 'Browse Bikes' },
+      { to: '/renter/earnings', label: 'Earnings' },
     ],
     passenger: [
       { to: '/passenger/search', label: 'Find a Ride' },

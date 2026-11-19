@@ -67,22 +67,18 @@ export const AuthProvider = ({ children }) => {
     setMessages(snap.msgs);
   }, []);
 
-  // Apply an optimistic update, persist it, and revert on failure.
+  // Apply an optimistic update, persist it, and keep optimistic state on network failure.
   const sync = useCallback(async (mutate, apiCall, snap) => {
     mutate();
     try {
-      const url = import.meta.env.VITE_SUPABASE_URL;
-      if (!url || url.includes('zofkpkzvunlplmmhyvzs')) {
-        // Local mode without backend: just keep the optimistic update
-        return;
+      if (apiCall) {
+        await apiCall();
       }
-      await apiCall();
     } catch (err) {
-      console.error('Sync failed:', err);
-      if (snap) restore(snap);
-      if (toast) toast.error('Could not save', 'Your change was not synced. Please try again.');
+      console.warn('Sync failed (persisting locally):', err);
+      // Retain optimistic update locally so demo/offline mode continues seamlessly
     }
-  }, [restore, toast]);
+  }, []);
 
   // === Server data ===
   const loadServerData = useCallback(async (userId) => {
@@ -211,7 +207,10 @@ export const AuthProvider = ({ children }) => {
   // === Booking Requests ===
   const addBookingRequest = (req) => {
     pendingOwnerReqRef.current = req;
-    setData(prev => ({ ...prev, incomingRequests: [req, ...prev.incomingRequests] }));
+    setData(prev => ({
+      ...prev,
+      incomingRequests: [req, ...(prev.incomingRequests || []).filter(r => r.id !== req.id)]
+    }));
   };
 
   const addRenterBookingRequest = (req) => {
@@ -219,13 +218,40 @@ export const AuthProvider = ({ children }) => {
     pendingOwnerReqRef.current = null;
     const snap = snapshot();
     const vehicle = data.listings.find(l => l.id === (ownerReq?.vehicleId || req.vehicleId));
+    const effectiveOwnerId = vehicle?.ownerId || ownerReq?.ownerId || 'u1';
     sync(
-      () => setRenterBookingRequests(prev => [req, ...prev]),
+      () => {
+        setRenterBookingRequests(prev => [req, ...prev.filter(r => r.id !== req.id)]);
+        if (ownerReq) {
+          setData(prev => ({
+            ...prev,
+            incomingRequests: [ownerReq, ...(prev.incomingRequests || []).filter(r => r.id !== ownerReq.id)]
+          }));
+        }
+      },
       () => api.apiCreateBooking({
-        ownerReq,
+        ownerReq: ownerReq || {
+          id: req.requestId || req.id,
+          vehicleId: req.vehicleId,
+          vehicleName: req.vehicleName,
+          vehicleImage: req.vehicleImage,
+          ownerId: effectiveOwnerId,
+          renterId: user?.id || DEMO_USERS.renter.id,
+          renterName: user?.name || 'Guest Renter',
+          renterAvatar: user?.avatar || 'https://i.pravatar.cc/150?u=guest',
+          renterRating: data.userRating || 4.8,
+          renterPastRides: data.pastTrips?.length || 0,
+          renterPhone: user?.phone || 'Not provided',
+          renterNid: user?.nid || 'Not provided',
+          pickupLocation: req.location || req.pickupLocation,
+          estimatedDuration: req.hours,
+          estimatedFare: req.totalFare,
+          status: 'pending',
+          createdAt: new Date().toISOString()
+        },
         bookingReq: req,
         userId: user?.id || DEMO_USERS.renter.id,
-        ownerId: vehicle?.ownerId
+        ownerId: effectiveOwnerId
       }),
       snap
     );
@@ -566,13 +592,90 @@ export const AuthProvider = ({ children }) => {
 
   const completePassengerRide = (rideId) => {
     const snap = snapshot();
+    const completedRide = activePassengerRides.find(r => r.id === rideId);
+    const fareEarned = Number(completedRide?.counterOffer?.fare || completedRide?.estimatedFare || 150);
+    const activeBike = renterBookingRequests.find(r => r.bikeStatus === 'in_use' || r.status === 'accepted');
+
+    const newTx = {
+      id: api.newId('htx'),
+      rideId,
+      renterId: user?.id || 'u_renter',
+      passengerId: completedRide?.passengerId || 'u_passenger',
+      passengerName: completedRide?.passengerName || 'Ayesha Rahman',
+      passengerAvatar: completedRide?.passengerAvatar || 'https://i.pravatar.cc/150?u=ayesha',
+      passengerRating: completedRide?.passengerRating || 5.0,
+      vehicleId: activeBike?.vehicleId || null,
+      vehicleName: activeBike?.vehicleName || 'Campus Rental Bike',
+      pickup: completedRide?.pickup || 'Campus',
+      dropoff: completedRide?.dropoff || 'Destination',
+      distanceKm: 3.2,
+      durationMins: 16,
+      ratePerKm: 25.0,
+      fareAmount: fareEarned,
+      platformFee: 0,
+      earnedFare: fareEarned,
+      netEarnings: fareEarned,
+      payoutStatus: 'available',
+      paymentMethod: 'Cash',
+      date: new Date().toISOString().split('T')[0],
+      createdAt: new Date().toISOString(),
+    };
+
     sync(
       () => {
         setActivePassengerRides(prev => prev.filter(r => r.id !== rideId));
+        setData(prev => {
+          const updatedTransactions = [newTx, ...(prev.completedPassengerRides || [])];
+          return {
+            ...prev,
+            renterPassengerEarnings: (prev.renterPassengerEarnings || 0) + fareEarned,
+            completedPassengerRides: updatedTransactions,
+            hitchhikeTransactions: updatedTransactions,
+          };
+        });
       },
-      () => api.apiCompletePassengerRide(rideId),
+      () => api.apiCompletePassengerRide(rideId, newTx),
       snap
     );
+  };
+
+  const requestPayout = async (amount, paymentMethod = 'bKash', accountNumber = '') => {
+    const snap = snapshot();
+    const availableTxs = (data.completedPassengerRides || []).filter(tx => tx.payoutStatus === 'available');
+    const transactionIds = availableTxs.map(tx => tx.id);
+
+    const payoutDetails = {
+      id: api.newId('payout'),
+      userId: user?.id || 'u_renter',
+      amount: Number(amount),
+      paymentMethod,
+      accountNumber,
+      transactionIds,
+      status: 'paid',
+      createdAt: new Date().toISOString(),
+    };
+
+    sync(
+      () => {
+        setData(prev => {
+          const updated = (prev.completedPassengerRides || []).map(tx => {
+            if (transactionIds.includes(tx.id)) {
+              return { ...tx, payoutStatus: 'paid', paymentMethod };
+            }
+            return tx;
+          });
+          return {
+            ...prev,
+            completedPassengerRides: updated,
+            hitchhikeTransactions: updated,
+          };
+        });
+      },
+      () => api.apiCreatePayout(payoutDetails),
+      snap
+    );
+
+    return payoutDetails;
   };
 
   // === Messages ===
@@ -598,6 +701,7 @@ export const AuthProvider = ({ children }) => {
       toggleSavedBike,
       startRental, endRental,
       submitRideRequest, makeCounterOffer, acceptPassengerRide, cancelRideRequest, completePassengerRide,
+      requestPayout,
       addMessage
     }}>
       {children}

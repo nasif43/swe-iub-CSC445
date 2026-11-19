@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Search, Clock, Bookmark, Star, Map, MapPin, Users, ChevronRight, CircleUserRound, Bike } from 'lucide-react';
+import { Search, Clock, Bookmark, Star, Map, MapPin, Users, ChevronRight, CircleUserRound, Bike, Wallet, ArrowUpRight } from 'lucide-react';
 import { useToast } from '../../components/ui/Toast';
-import { AcceptedBikeCard } from './RenterRequests';
+import { AcceptedBikeCard, PendingBikeCard } from './RenterRequests';
 
 export default function RenterDashboard() {
-  const { data, activeRentals, activePassengerRides, user, renterBookingRequests, completePassengerRide } = useAuth();
+  const { data, activeRentals, activePassengerRides, user, renterBookingRequests, completePassengerRide, cancelBookingRequest } = useAuth();
   const navigate = useNavigate();
   const toast = useToast();
   
@@ -17,14 +17,19 @@ export default function RenterDashboard() {
   }, []);
 
   const realActiveRentals = renterBookingRequests.filter(r => r.bikeStatus === 'in_use' || r.bikeStatus === 'returning');
+  const pendingRequests = renterBookingRequests.filter(r => r.status === 'pending');
 
-  const savedCount = data.savedBikes.length;
+  const savedCount = data.savedBikes?.length || 0;
   const tripCount = (data.pastTrips || []).length;
-  const rating = data.userRating;
+  const rating = data.userRating || 4.8;
+  const completedRides = data.completedPassengerRides || [];
+  const completedRidesCount = completedRides.length;
+  const renterEarnings = data.renterPassengerEarnings ?? completedRides.reduce((sum, r) => sum + (r.earnedFare || r.fareAmount || r.netEarnings || 0), 0);
   const nearby = data.listings.filter(l => l.isAvailable && l.status === 'available' && l.ownerId !== user?.id).slice(0, 4);
 
   const statCards = [
     { icon: <Map size={20} color="var(--forest)" />, label: 'Past Trips', value: tripCount, route: '/renter/trips' },
+    { icon: <Wallet size={20} color="var(--primary)" />, label: 'Earnings', value: `৳${renterEarnings.toLocaleString()}`, route: '/renter/earnings', highlight: true },
     { icon: <Bookmark size={20} color="var(--accent-purple)" />, label: 'Saved', value: savedCount, route: '/renter/saved' },
     { icon: <Star size={20} color="#F59E0B" />, label: 'Rating', value: rating.toFixed(1), route: '/renter/ratings' },
   ];
@@ -50,10 +55,71 @@ export default function RenterDashboard() {
         </div>
       </div>
 
-      {/* Active trip banner — bookings accepted by owner (20-min arrival countdown) */}
+      {/* Renter Rideshare Earnings Hero Metric Card */}
+      <div 
+        onClick={() => navigate('/renter/earnings')}
+        style={{
+          background: 'linear-gradient(135deg, #0C3D24 0%, #00B14F 100%)',
+          color: '#FFFFFF',
+          borderRadius: 20,
+          padding: '20px 22px',
+          marginBottom: 22,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          cursor: 'pointer',
+          boxShadow: '0 8px 24px -4px rgba(0, 177, 79, 0.28)',
+          position: 'relative',
+          overflow: 'hidden',
+          transition: 'transform 0.15s ease',
+        }}
+      >
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: '#A7F3D0', marginBottom: 4 }}>
+            Available Rideshare Income
+          </div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 32, fontWeight: 900, fontVariantNumeric: 'tabular-nums', letterSpacing: -0.5 }}>
+              ৳{renterEarnings.toLocaleString()}
+            </span>
+            <span style={{ fontSize: 13, color: '#D1FAE5', fontWeight: 500, fontVariantNumeric: 'tabular-nums' }}>
+              • {completedRidesCount} {completedRidesCount === 1 ? 'ride completed' : 'rides completed'}
+            </span>
+          </div>
+          <div style={{ fontSize: 12, color: '#ECFDF5', marginTop: 4, opacity: 0.9 }}>
+            Offset rental expenses by giving campus rides
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, position: 'relative', zIndex: 1, flexShrink: 0 }}>
+          <button
+            onClick={(e) => { e.stopPropagation(); navigate('/renter/earnings'); }}
+            style={{
+              background: '#FFFFFF',
+              color: '#0C3D24',
+              border: 'none',
+              borderRadius: 12,
+              padding: '10px 16px',
+              fontWeight: 700,
+              fontSize: 13,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              cursor: 'pointer',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            <span>View Earnings</span>
+            <ArrowUpRight size={15} />
+          </button>
+        </div>
+      </div>
+
+      {/* Active trip banner — bookings accepted by owner */}
       {renterBookingRequests.filter(r => r.status === 'accepted' || r.bikeStatus === 'in_use' || r.bikeStatus === 'returning').length > 0 && (
         <div style={{ marginBottom: 20 }}>
-          <div className="micro-label" style={{ marginBottom: 10 }}>Your Active Trip</div>
+          <h3 style={{ marginBottom: 12, fontSize: 18 }}>Your Active Trip</h3>
           {renterBookingRequests.filter(r => r.status === 'accepted' || r.bikeStatus === 'in_use' || r.bikeStatus === 'returning').map((req, idx) => (
             <AcceptedBikeCard key={req.id || idx} req={req} />
           ))}
@@ -86,8 +152,10 @@ export default function RenterDashboard() {
               }}>
                 <img src={rental.vehicleImage || rental.image} alt="" style={{ width: 64, height: 48, objectFit: 'cover', borderRadius: 10, flexShrink: 0 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 11, color: color, fontWeight: 700, marginBottom: 2 }}>ACTIVE RIDE</div>
-                  <div style={{ fontWeight: 800, fontSize: 16 }}>{rental.vehicleName}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
+                    <span style={{ fontWeight: 800, fontSize: 16 }}>{rental.vehicleName}</span>
+                    <span style={{ fontSize: 11, background: `${color}18`, color: color, fontWeight: 700, padding: '2px 8px', borderRadius: 6 }}>Active Ride</span>
+                  </div>
                   <div style={{ fontSize: 13, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 5 }}>
                     <Clock size={13} color={color} /> <span style={{ color: color, fontWeight: 600 }}>{timeStr}</span>
                   </div>
@@ -111,8 +179,10 @@ export default function RenterDashboard() {
             }}>
               <img src={ride.passengerAvatar} alt={ride.passengerName} style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: '50%', flexShrink: 0 }} />
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 11, color: 'var(--primary)', fontWeight: 700, marginBottom: 2 }}>PASSENGER PICKUP</div>
-                <div style={{ fontWeight: 800, fontSize: 16 }}>{ride.passengerName}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
+                  <span style={{ fontWeight: 800, fontSize: 16 }}>{ride.passengerName}</span>
+                  <span style={{ fontSize: 11, background: 'rgba(0, 177, 79, 0.12)', color: 'var(--primary)', fontWeight: 700, padding: '2px 8px', borderRadius: 6 }}>Passenger</span>
+                </div>
                 <div style={{ fontSize: 13, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   <MapPin size={13} color="var(--primary)" /> {ride.pickup} → {ride.dropoff}
                 </div>
@@ -186,12 +256,43 @@ export default function RenterDashboard() {
             {card.icon}
             <div style={{ flex: 1, minWidth: 0 }}>
               <div className="text-muted text-sm">{card.label}</div>
-              <div style={{ fontSize: 22, fontWeight: 800, lineHeight: 1.2 }}>{card.value}</div>
+              <div style={{ fontSize: 22, fontWeight: 800, lineHeight: 1.2, fontVariantNumeric: 'tabular-nums' }}>{card.value}</div>
             </div>
             <ChevronRight size={16} color="var(--text-light)" />
           </div>
         ))}
       </div>
+
+      {/* Pending Requests — displayed above available bikes */}
+      {pendingRequests.length > 0 && (
+        <div style={{ marginBottom: 28 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Clock size={18} color="#D97706" />
+              <h3 style={{ marginBottom: 0, fontSize: 18 }}>Pending Requests</h3>
+              <span style={{ background: '#FEF3C7', color: '#92400E', borderRadius: 999, padding: '1px 8px', fontSize: 12, fontWeight: 700 }}>
+                {pendingRequests.length}
+              </span>
+            </div>
+            <button onClick={() => navigate('/renter/requests')} className="btn btn-ghost btn-sm" style={{ width: 'auto', color: 'var(--primary)', fontWeight: 600 }}>
+              View all <ChevronRight size={15} />
+            </button>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {pendingRequests.map(req => (
+              <PendingBikeCard
+                key={req.id}
+                req={req}
+                onMessage={(id) => navigate(`/chat/${id}`)}
+                onCancel={(id) => {
+                  cancelBookingRequest(id);
+                  toast.info('Request Cancelled', 'Your pending request has been cancelled.');
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Nearby bikes */}
       {nearby.length > 0 && (
@@ -207,7 +308,7 @@ export default function RenterDashboard() {
               <div key={bike.id} className="bike-tile" style={{ cursor: 'pointer' }} onClick={() => navigate(`/renter/book/${bike.id}`)}>
                 <div className="tile-media">
                   <img src={bike.image} alt={bike.vehicleName} loading="lazy" />
-                  <div style={{ position: 'absolute', top: 8, left: 8, background: 'rgba(12,61,36,0.92)', color: '#fff', padding: '2px 9px', borderRadius: 999, fontSize: 12, fontWeight: 700 }}>
+                  <div style={{ position: 'absolute', top: 8, left: 8, background: 'rgba(12,61,36,0.92)', color: '#fff', padding: '2px 9px', borderRadius: 999, fontSize: 12, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
                     ৳{bike.hourlyRate}/hr
                   </div>
                 </div>

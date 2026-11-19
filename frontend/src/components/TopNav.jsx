@@ -162,10 +162,13 @@ export default function TopNav() {
                   <User size={16} color="var(--text-muted)" /> My Profile
                 </button>
 
-                {/* Earnings (owner only) */}
-                {role === 'owner' && (
+                {/* Earnings */}
+                {(role === 'owner' || role === 'renter') && (
                   <button
-                    onClick={() => { navigate('/owner/earnings'); setShowUserMenu(false); }}
+                    onClick={() => {
+                      navigate(role === 'owner' ? '/owner/earnings' : '/renter/earnings');
+                      setShowUserMenu(false);
+                    }}
                     style={{
                       width: '100%', padding: '11px 18px', textAlign: 'left',
                       fontWeight: 600, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: 10,

@@ -3,11 +3,12 @@ import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import {
   MapPin, Navigation, CheckCircle2, Phone, MessageCircle,
-  Clock, AlertTriangle, Camera, DollarSign, Bike, Star, Timer
+  Clock, AlertTriangle, Camera, DollarSign, Bike, Star, Timer, Radio
 } from 'lucide-react';
 import TripPhotoCapture from './TripPhotoCapture';
 import PageHeader from '../../components/ui/PageHeader';
 import { useToast } from '../../components/ui/Toast';
+import { useLocationBroadcast } from '../../hooks/useLocationBroadcast';
 import './RenterRequests.css';
 
 // Countdown timer hook
@@ -42,6 +43,12 @@ export function AcceptedBikeCard({ req }) {
   const [requestingTime, setRequestingTime] = useState(false);
 
   const bikeStatus = req.bikeStatus || 'accepted';
+
+  // ── Broadcast renter GPS to owner while the booking is active ──────────
+  useLocationBroadcast(
+    req.vehicleId,
+    req.status === 'accepted' || bikeStatus === 'in_use' || bikeStatus === 'returning' || bikeStatus === 'accepted' || bikeStatus === 'at_garage'
+  );
 
   const locationLines = req.exactLocation
     ? [req.exactLocation.address, `${req.exactLocation.lat}°N, ${req.exactLocation.lng}°E`]
@@ -81,6 +88,12 @@ export function AcceptedBikeCard({ req }) {
               {statusMeta.icon} {statusMeta.label}
             </span>
             <h4 className="accepted-bike-card__vehicle-name">{req.vehicleName}</h4>
+            {(bikeStatus === 'in_use' || bikeStatus === 'accepted' || req.status === 'accepted') && (
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 4, background: 'rgba(0,0,0,0.55)', borderRadius: 999, padding: '3px 10px', fontSize: 11, color: 'white', fontWeight: 600 }}>
+                <Radio size={11} color="#4ADE80" />
+                <span style={{ color: '#4ADE80' }}>Live GPS Broadcast Active</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -261,7 +274,7 @@ export function AcceptedBikeCard({ req }) {
 }
 
 
-function PendingBikeCard({ req, onMessage, onCancel }) {
+export function PendingBikeCard({ req, onMessage, onCancel }) {
   return (
     <div style={{
       background: 'white', border: '1.5px solid #FDE68A',

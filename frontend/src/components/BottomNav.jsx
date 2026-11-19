@@ -19,6 +19,7 @@ export default function BottomNav() {
       { to: '/renter/dashboard', label: 'Home', icon: Home },
       { to: '/renter/browse', label: 'Browse', icon: Search },
       { to: '/renter/requests', label: 'Requests', icon: Inbox },
+      { to: '/renter/earnings', label: 'Earnings', icon: Wallet },
       { to: '/profile', label: 'Profile', icon: CircleUserRound },
     ],
     passenger: [

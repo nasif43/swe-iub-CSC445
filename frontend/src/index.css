@@ -61,6 +61,35 @@
   padding: 0;
 }
 
+::selection {
+  background-color: var(--primary);
+  color: #FFFFFF;
+}
+
+::-moz-selection {
+  background-color: var(--primary);
+  color: #FFFFFF;
+}
+
+/* Custom Scrollbar for impeccable look */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
 html {
   -webkit-text-size-adjust: 100%;
 }
@@ -72,6 +101,7 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
+  caret-color: var(--primary);
 }
 
 /* Web App Layout Container */
@@ -714,6 +744,14 @@ img { display: block; }
   border-radius: var(--radius-lg);
   padding: 16px 14px;
   box-shadow: var(--shadow-sm);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-card:hover {
+  border-color: var(--border-hover);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
 }
 
 /* Desktop top nav (replaces TopNav on wide screens) */

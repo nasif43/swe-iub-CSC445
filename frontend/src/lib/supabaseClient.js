@@ -19,6 +19,8 @@ const TABLE_EVENTS = [
   'ratings',
   'ride_requests',
   'messages',
+  'hitchhike_transactions',
+  'renter_earnings',
 ];
 
 // Real-time cross-device sync: any insert/update/delete on the key tables

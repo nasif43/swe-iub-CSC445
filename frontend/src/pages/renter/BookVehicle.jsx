@@ -40,6 +40,10 @@ export default function BookVehicle() {
     const ownerReq = {
       id: sharedId,
       vehicleId: vehicle.id,
+      vehicleName: vehicle.vehicleName,
+      vehicleImage: vehicle.image,
+      ownerId: vehicle.ownerId || 'u1',
+      renterId: user?.id || 'u_renter',
       renterName: user?.name || 'Guest Renter',
       renterAvatar: user?.avatar || 'https://i.pravatar.cc/150?u=guest',
       renterRating: data.userRating || 4.8,

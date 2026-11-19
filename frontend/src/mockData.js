@@ -2,7 +2,7 @@ export const initialMockData = {
   listings: [
     {
       id: 'v3',
-      ownerId: 'u3',
+      ownerId: 'u1',
       vehicleName: 'Honda CB300R',
       model: 'CB300R',
       make: 'Honda',
@@ -16,8 +16,8 @@ export const initialMockData = {
       maxRadiusKm: 25,
       rating: 4.8,
       totalTrips: 15,
-      ownerName: 'Karim',
-      ownerAvatar: 'https://i.pravatar.cc/150?u=karim',
+      ownerName: 'Nazia Putul',
+      ownerAvatar: 'https://i.pravatar.cc/150?u=nazia',
       image: 'https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
       description: 'Sporty and fast. Great for longer trips off campus.',
       status: 'available',
@@ -56,7 +56,7 @@ export const initialMockData = {
     },
     {
       id: 'v1',
-      ownerId: 'u2',
+      ownerId: 'u1',
       vehicleName: 'Yamaha R15 V3',
       model: 'R15 V3',
       make: 'Yamaha',
@@ -70,8 +70,8 @@ export const initialMockData = {
       maxRadiusKm: 15,
       rating: 4.9,
       totalTrips: 38,
-      ownerName: 'Rahim',
-      ownerAvatar: 'https://i.pravatar.cc/150?u=rahim',
+      ownerName: 'Nazia Putul',
+      ownerAvatar: 'https://i.pravatar.cc/150?u=nazia',
       image: 'https://images.unsplash.com/photo-1449426468159-d96dbf08f19f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
       description: 'Well maintained, smooth ride. Helmet included. Great for campus commutes.',
       status: 'available',
@@ -145,6 +145,29 @@ export const initialMockData = {
       estimatedTime: '22 min',
       time: 'Now',
       status: 'open'
+    }
+  ],
+  renterPassengerEarnings: 380,
+  completedPassengerRides: [
+    {
+      id: 'pride_hist_1',
+      passengerName: 'Tanvir Hossain',
+      passengerAvatar: 'https://i.pravatar.cc/150?u=tanvir',
+      pickup: 'TSC, Dhaka University',
+      dropoff: 'Shahbagh Square',
+      earnedFare: 200,
+      date: '2026-08-08',
+      rating: 5
+    },
+    {
+      id: 'pride_hist_2',
+      passengerName: 'Nusrat Jahan',
+      passengerAvatar: 'https://i.pravatar.cc/150?u=nusrat',
+      pickup: 'Curzon Hall',
+      dropoff: 'New Market Gate 1',
+      earnedFare: 180,
+      date: '2026-08-05',
+      rating: 5
     }
   ]
 };
