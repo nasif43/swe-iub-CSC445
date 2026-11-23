@@ -12,13 +12,13 @@ export default function TopNav() {
     owner: [
       { to: '/owner/dashboard', label: 'Dashboard' },
       { to: '/owner/requests', label: 'Requests' },
-      { to: '/owner/bikes', label: 'My Bikes' },
+      { to: '/owner/bikes', label: 'My Vehicles' },
       { to: '/owner/earnings', label: 'Earnings' },
     ],
     renter: [
       { to: '/renter/dashboard', label: 'Dashboard' },
       { to: '/renter/requests', label: 'Requests' },
-      { to: '/renter/browse', label: 'Browse Bikes' },
+      { to: '/renter/browse', label: 'Browse Vehicles' },
       { to: '/renter/earnings', label: 'Earnings' },
     ],
     passenger: [
@@ -27,7 +27,7 @@ export default function TopNav() {
   };
 
   const currentLinks = isAuthenticated ? (navLinks[role] || []) : [
-    { to: '/renter/browse', label: 'Rent a Bike' },
+    { to: '/renter/browse', label: 'Rent a Vehicle' },
     { to: '/owner/dashboard', label: 'List & Earn' },
     { to: '/passenger/search', label: 'Find a Ride' },
   ];
@@ -49,7 +49,7 @@ export default function TopNav() {
       {/* Logo + Links */}
       <div className="flex items-center gap-8">
         <NavLink to="/" style={{ fontSize: 22, fontWeight: 900, color: 'var(--primary)', textDecoration: 'none', letterSpacing: -0.5 }}>
-          OurBike
+          OurRide
         </NavLink>
         <div className="flex items-center gap-1">
           {currentLinks.map(link => (

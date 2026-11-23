@@ -36,62 +36,76 @@ const mapListing = (r) => ({
   totalBikeEarnings: Number(r.total_bike_earnings),
 });
 
-const mapOwnerReq = (r) => ({
-  id: r.request_id,
-  requestId: r.request_id,
-  vehicleId: r.vehicle_id,
-  vehicleName: r.vehicle_name,
-  vehicleImage: r.vehicle_image,
-  ownerId: r.owner_id,
-  ownerName: r.owner_name,
-  ownerAvatar: r.owner_avatar,
-  renterName: r.renter_name,
-  renterAvatar: r.renter_avatar,
-  renterRating: r.renter_rating,
-  renterPastRides: r.renter_past_rides,
-  renterPhone: r.renter_phone,
-  renterNid: r.renter_nid,
-  pickupLocation: r.pickup_location,
-  estimatedDuration: r.hours,
-  estimatedFare: Number(r.estimated_fare),
-  totalFare: Number(r.total_fare),
-  status: r.status,
-  bikeStatus: r.bike_status,
-  tripStartedAt: r.started_at,
-  acceptedAt: r.accepted_at,
-  locationRevealed: r.location_revealed,
-  beforePhoto: r.before_photo,
-  afterPhoto: r.after_photo,
-  createdAt: r.created_at,
-});
+const isArrivalExpired = (r) => {
+  if (r.status === 'accepted' && (r.bike_status === 'at_garage' || !r.bike_status || r.bike_status === 'accepted') && r.accepted_at) {
+    const elapsed = Date.now() - new Date(r.accepted_at).getTime();
+    return elapsed > 20 * 60 * 1000;
+  }
+  return false;
+};
 
-const mapRenterReq = (r) => ({
-  id: r.id,
-  requestId: r.request_id,
-  vehicleId: r.vehicle_id,
-  vehicleName: r.vehicle_name,
-  vehicleImage: r.vehicle_image,
-  ownerId: r.owner_id,
-  ownerName: r.owner_name,
-  ownerAvatar: r.owner_avatar,
-  location: r.pickup_location,
-  exactLocation: r.exact_location || null,
-  selectedDay: r.selected_day,
-  selectedTime: r.selected_time,
-  hours: r.hours,
-  purpose: r.purpose,
-  estimatedFare: Number(r.estimated_fare),
-  totalFare: Number(r.total_fare),
-  status: r.status,
-  bikeStatus: r.bike_status,
-  startedAt: r.started_at,
-  acceptedAt: r.accepted_at,
-  locationRevealed: r.location_revealed,
-  beforePhoto: r.before_photo,
-  afterPhoto: r.after_photo,
-  canFindPassengers: r.can_find_passengers,
-  createdAt: r.created_at,
-});
+const mapOwnerReq = (r) => {
+  const expired = isArrivalExpired(r);
+  return {
+    id: r.request_id,
+    requestId: r.request_id,
+    vehicleId: r.vehicle_id,
+    vehicleName: r.vehicle_name,
+    vehicleImage: r.vehicle_image,
+    ownerId: r.owner_id,
+    ownerName: r.owner_name,
+    ownerAvatar: r.owner_avatar,
+    renterName: r.renter_name,
+    renterAvatar: r.renter_avatar,
+    renterRating: r.renter_rating,
+    renterPastRides: r.renter_past_rides,
+    renterPhone: r.renter_phone,
+    renterNid: r.renter_nid,
+    pickupLocation: r.pickup_location,
+    estimatedDuration: r.hours,
+    estimatedFare: Number(r.estimated_fare),
+    totalFare: Number(r.total_fare),
+    status: expired ? 'expired' : r.status,
+    bikeStatus: r.bike_status,
+    tripStartedAt: r.started_at,
+    acceptedAt: r.accepted_at,
+    locationRevealed: r.location_revealed,
+    beforePhoto: r.before_photo,
+    afterPhoto: r.after_photo,
+    createdAt: r.created_at,
+  };
+};
+
+const mapRenterReq = (r) => {
+  const expired = isArrivalExpired(r);
+  return {
+    id: r.id,
+    requestId: r.request_id,
+    vehicleId: r.vehicle_id,
+    vehicleName: r.vehicle_name,
+    vehicleImage: r.vehicle_image,
+    ownerId: r.owner_id,
+    ownerName: r.owner_name,
+    ownerAvatar: r.owner_avatar,
+    location: r.pickup_location,
+    exactLocation: r.exact_location || null,
+    selectedDay: r.selected_day,
+    selectedTime: r.selected_time,
+    hours: r.hours,
+    purpose: r.purpose,
+    estimatedFare: Number(r.estimated_fare),
+    totalFare: Number(r.total_fare),
+    status: expired ? 'expired' : r.status,
+    bikeStatus: r.bike_status,
+    startedAt: r.started_at,
+    acceptedAt: r.accepted_at,
+    locationRevealed: r.location_revealed,
+    beforePhoto: r.before_photo,
+    afterPhoto: r.after_photo,
+    canFindPassengers: r.can_find_passengers,
+    createdAt: r.created_at,
+  };
+};
 
 const mapRide = (r) => ({
   id: r.id,
@@ -146,7 +160,7 @@ const mapRating = (r) => ({
   vehicle: r.vehicle,
 });
 
-const mapMessage = (r) => ({
+export const mapMessage = (r) => ({
   id: r.id,
   chatId: r.chat_id,
   text: r.text,
@@ -645,6 +659,16 @@ export async function apiCancelRideRequest(rideId) {
 // ---------------------------------------------------------------------------
 // Messages
 // ---------------------------------------------------------------------------
+export async function apiFetchMessages(chatId) {
+  let query = supabase.from('messages').select('*').order('created_at', { ascending: true });
+  if (chatId) {
+    query = query.eq('chat_id', chatId);
+  }
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data || []).map(mapMessage);
+}
+
 export async function apiSendMessage(msg) {
   const { error } = await supabase.from('messages').insert({
     id: msg.id,

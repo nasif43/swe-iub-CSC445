@@ -25,11 +25,11 @@ export default function MyBikes() {
   return (
     <div style={{ maxWidth: 640, margin: '0 auto' }}>
       <PageHeader
-        title="My Fleet"
-        subtitle="Your listed bikes — tap one to manage settings"
+        title="My Vehicles"
+        subtitle="Your listed vehicles — tap one to manage settings"
         action={
           <button className="btn btn-primary btn-sm" style={{ width: 'auto', flexShrink: 0 }} onClick={() => navigate('/owner/create')}>
-            <PlusCircle size={16} /> Add a Bike
+            <PlusCircle size={16} /> Add a Vehicle
           </button>
         }
       />
@@ -39,8 +39,8 @@ export default function MyBikes() {
           <div style={{ width: 56, height: 56, margin: '0 auto 14px', borderRadius: 16, background: 'var(--primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Bike size={28} color="var(--primary)" />
           </div>
-          <h3>No bikes listed yet</h3>
-          <p className="text-muted text-sm" style={{ marginBottom: 20 }}>List your first bike and start earning today.</p>
+          <h3>No vehicles listed yet</h3>
+          <p className="text-muted text-sm" style={{ marginBottom: 20 }}>List your first vehicle and start earning today.</p>
           <button className="btn btn-primary" style={{ width: 'auto' }} onClick={() => navigate('/owner/create')}>
             Create First Listing
           </button>

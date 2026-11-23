@@ -80,7 +80,7 @@ export default function CreateListing() {
         createdAt: new Date().toISOString(),
       };
       addListing(newListing);
-      toast.success('Bike listed!', 'Your bike is now available for rent.');
+      toast.success('Vehicle listed!', 'Your vehicle is now available for rent.');
       navigate('/owner/bikes');
     } catch (err) {
       toast.error('Error', 'Failed to create listing.');
@@ -95,14 +95,14 @@ export default function CreateListing() {
         <button onClick={() => navigate(-1)} className="btn btn-outline btn-sm" style={{ width: 'auto' }}>
           <ChevronLeft size={18} /> Back
         </button>
-        <h2 className="create-listing__title">List a Bike</h2>
+        <h2 className="create-listing__title">List a Vehicle</h2>
       </div>
 
       <div className="card create-listing__card">
         <form onSubmit={handleSubmit} className="create-listing__form">
 
           <div>
-            <label className="create-listing__label">Bike Photo *</label>
+            <label className="create-listing__label">Vehicle Photo *</label>
             <div className={`create-listing__photo-zone${formData.image ? '' : ' create-listing__photo-zone--empty'}`}>
               {formData.image ? (
                 <img src={formData.image} alt="Preview" className="create-listing__photo-preview" />

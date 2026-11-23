@@ -5,22 +5,25 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from './ui/Toast';
 
 export default function DesktopNav() {
-  const { isAuthenticated, role, toggleRole, user, login, logout } = useAuth();
+  const { isAuthenticated, role, toggleRole, user, data, renterBookingRequests, login, logout } = useAuth();
   const navigate = useNavigate();
   const toast = useToast();
   const [menuOpen, setMenuOpen] = useState(false);
 
+  const pendingOwnerCount = (data?.incomingRequests || []).filter(r => r.status === 'pending').length;
+  const pendingRenterCount = (renterBookingRequests || []).filter(r => r.status === 'pending').length;
+
   const links = {
     owner: [
       { to: '/owner/dashboard', label: 'Dashboard' },
-      { to: '/owner/requests', label: 'Requests' },
-      { to: '/owner/bikes', label: 'My Bikes' },
+      { to: '/owner/requests', label: 'Requests', badge: pendingOwnerCount },
+      { to: '/owner/bikes', label: 'My Vehicles' },
       { to: '/owner/earnings', label: 'Earnings' },
     ],
     renter: [
       { to: '/renter/dashboard', label: 'Dashboard' },
-      { to: '/renter/requests', label: 'Requests' },
-      { to: '/renter/browse', label: 'Browse Bikes' },
+      { to: '/renter/requests', label: 'Requests', badge: pendingRenterCount },
+      { to: '/renter/browse', label: 'Browse Vehicles' },
       { to: '/renter/earnings', label: 'Earnings' },
     ],
     passenger: [
@@ -29,7 +32,7 @@ export default function DesktopNav() {
   };
 
   const current = isAuthenticated ? (links[role] || []) : [
-    { to: '/renter/browse', label: 'Rent a Bike' },
+    { to: '/renter/browse', label: 'Rent a Vehicle' },
     { to: '/owner/dashboard', label: 'List & Earn' },
     { to: '/passenger/search', label: 'Find a Ride' },
   ];
@@ -48,7 +51,7 @@ export default function DesktopNav() {
         OurRide
       </NavLink>
 
-      <nav style={{ display: 'flex', gap: 2, flex: 1 }}>
+      <nav style={{ display: 'flex', gap: 4, flex: 1 }}>
         {current.map(l => (
           <NavLink
             key={l.to}
@@ -61,9 +64,25 @@ export default function DesktopNav() {
               color: isActive ? 'var(--primary)' : 'var(--text-muted)',
               background: isActive ? 'var(--primary-light)' : 'transparent',
               textDecoration: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
             })}
           >
-            {l.label}
+            <span>{l.label}</span>
+            {l.badge > 0 && (
+              <span style={{
+                background: 'var(--primary)',
+                color: '#fff',
+                fontSize: 11,
+                fontWeight: 700,
+                padding: '1px 6px',
+                borderRadius: 999,
+                lineHeight: 1.2
+              }}>
+                {l.badge}
+              </span>
+            )}
           </NavLink>
         ))}
       </nav>

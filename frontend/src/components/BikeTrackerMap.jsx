@@ -309,7 +309,7 @@ export default function BikeTrackerMap({ vehicleId, homeLat, homeLng, radiusKm =
           <AlertTriangle size={20} color="#DC2626" style={{ flexShrink: 0 }} />
           <div style={{ flex: 1 }}>
             <div style={{ fontWeight: 800, color: '#DC2626', fontSize: 14 }}>
-              🚨 GEOFENCE BREACH — Bike is outside the allowed zone!
+              🚨 GEOFENCE BREACH — Vehicle is outside the allowed zone!
             </div>
             <div style={{ fontSize: 12, color: '#991B1B', marginTop: 2 }}>
               {dist ? `${dist.toFixed(2)} km from garage` : ''} · Allowed radius: {radiusKm} km
@@ -337,7 +337,7 @@ export default function BikeTrackerMap({ vehicleId, homeLat, homeLng, radiusKm =
         }}>
           <CheckCircle2 size={16} color="#059669" />
           <span style={{ fontWeight: 700, color: '#065F46', fontSize: 13 }}>
-            Bike is within the zone · {dist ? `${dist.toFixed(2)} km from garage` : ''}
+            Vehicle is within the zone · {dist ? `${dist.toFixed(2)} km from garage` : ''}
           </span>
         </div>
       )}
@@ -382,7 +382,7 @@ export default function BikeTrackerMap({ vehicleId, homeLat, homeLng, radiusKm =
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
           <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#00B14F', border: '2px solid white', boxShadow: '0 1px 3px rgba(0,177,79,0.4)' }} />
-          Bike (live)
+          Vehicle (live)
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
           <div style={{ width: 24, height: 3, background: '#00B14F', borderRadius: 2, opacity: 0.6 }} />

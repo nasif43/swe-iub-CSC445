@@ -44,6 +44,14 @@ export function AcceptedBikeCard({ req }) {
 
   const bikeStatus = req.bikeStatus || 'accepted';
 
+  // If booking is expired, completed, or cancelled, remove the card as requested
+  if (req.status === 'expired' || req.status === 'completed' || req.status === 'cancelled') {
+    return null;
+  }
+  if ((bikeStatus === 'accepted' || bikeStatus === 'at_garage') && (arrivalCountdown?.expired || (!req.acceptedAt && req.createdAt && Date.now() - new Date(req.createdAt).getTime() > 20 * 60 * 1000))) {
+    return null;
+  }
+
   // ── Broadcast renter GPS to owner while the booking is active ──────────
   useLocationBroadcast(
     req.vehicleId,
@@ -61,7 +69,7 @@ export function AcceptedBikeCard({ req }) {
   }[bikeStatus] || { icon: null, label: bikeStatus.toUpperCase(), color: 'var(--text-muted)' };
 
   // Build chat URL with owner context
-  const ownerChatUrl = `/chat/${req.requestId || req.id}`;
+  const ownerChatUrl = `/chat/${req.requestId || req.id}?name=${encodeURIComponent(req.ownerName || 'Nazia Putul')}&context=${encodeURIComponent((req.vehicleName || 'Vehicle') + ' booking')}&avatar=${encodeURIComponent(req.ownerAvatar || '')}`;
 
   return (
     <>
@@ -128,13 +136,6 @@ export function AcceptedBikeCard({ req }) {
               <div style={{ flex: 1, textAlign: 'right', fontSize: 12, color: arrivalCountdown.secondsLeft < 300 ? 'var(--error)' : '#92400E', fontWeight: 600 }}>
                 Reach the bike within 20 minutes or you'll have to rebook.
               </div>
-            </div>
-          )}
-
-          {(bikeStatus === 'accepted' || bikeStatus === 'at_garage') && arrivalCountdown?.expired && (
-            <div style={{ background: '#FEE2E2', borderRadius: 12, padding: '12px 14px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
-              <AlertTriangle size={18} color="var(--error)" />
-              <div style={{ fontWeight: 700, color: 'var(--error)', fontSize: 14 }}>Time expired. Please rebook.</div>
             </div>
           )}
 
@@ -391,20 +392,31 @@ export default function RenterRequests() {
   const navigate = useNavigate();
   const [tab, setTab] = useState('sent');
 
+  const isArrivalExpired = (r) => {
+    if (r.status === 'expired' || r.status === 'completed' || r.status === 'cancelled' || r.status === 'rejected') return true;
+    if (r.bikeStatus === 'in_use' || r.bikeStatus === 'returning') return false;
+    if (r.status === 'accepted' || r.bikeStatus === 'at_garage' || r.status === 'active') {
+      if (!r.acceptedAt) return false;
+      const limitMs = 20 * 60 * 1000;
+      return (Date.now() - new Date(r.acceptedAt).getTime()) > limitMs;
+    }
+    return false;
+  };
+
   // 'accepted' = owner accepted, 'active' = legacy alias for accepted, 'in_use'/'returning' tracked via bikeStatus
   const acceptedReqs = renterBookingRequests.filter(r =>
-    r.status === 'accepted' || r.bikeStatus === 'in_use' || r.bikeStatus === 'returning' || r.status === 'active'
+    (r.status === 'accepted' || r.bikeStatus === 'in_use' || r.bikeStatus === 'returning' || r.status === 'active') && !isArrivalExpired(r)
   );
   
-  const activeReqs = renterBookingRequests.filter(r => r.status === 'active'); // legacy fallback
+  const activeReqs = renterBookingRequests.filter(r => r.status === 'active' && !isArrivalExpired(r));
   
   const pendingReqs = renterBookingRequests.filter(r =>
     r.status === 'pending' || r.status === 'active'
-  ).filter(r => r.bikeStatus !== 'in_use' && r.bikeStatus !== 'returning');
+  ).filter(r => r.bikeStatus !== 'in_use' && r.bikeStatus !== 'returning' && !isArrivalExpired(r));
   
-  const pastReqs = renterBookingRequests.filter(r => r.status === 'completed' || r.status === 'rejected');
+  const pastReqs = renterBookingRequests.filter(r => r.status === 'completed' || r.status === 'rejected' || r.status === 'expired' || isArrivalExpired(r));
 
-  const hasActiveBike = renterBookingRequests.some(r => r.status === 'accepted' || r.bikeStatus === 'in_use' || r.bikeStatus === 'returning') || data.listings.some(l => l.ownerId === user?.id && l.status === 'active');
+  const hasActiveBike = acceptedReqs.length > 0 || data.listings.some(l => l.ownerId === user?.id && l.status === 'active');
   const passReqs = data.availableRideRequests;
 
   const sentCount = acceptedReqs.length + pendingReqs.length;
@@ -482,7 +494,10 @@ export default function RenterRequests() {
                       <PendingBikeCard
                         key={req.id}
                         req={req}
-                        onMessage={(id) => navigate(`/chat/${id}`)}
+                        onMessage={(id) => {
+                          const targetReq = pendingReqs.find(r => (r.requestId || r.id) === id);
+                          navigate(`/chat/${id}?name=${encodeURIComponent(targetReq?.ownerName || 'Nazia Putul')}&context=${encodeURIComponent((targetReq?.vehicleName || 'Vehicle') + ' booking')}&avatar=${encodeURIComponent(targetReq?.ownerAvatar || '')}`);
+                        }}
                         onCancel={() => {
                           cancelBookingRequest(req.requestId || req.id);
                           toast.info('Request Cancelled', 'Your pending request has been cancelled.');

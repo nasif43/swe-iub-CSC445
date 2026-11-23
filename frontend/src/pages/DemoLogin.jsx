@@ -25,7 +25,7 @@ export default function DemoLogin() {
           <Shield size={18} /> Login as Owner
         </button>
         <button className="btn btn-primary" style={{ display: 'flex', gap: 10, justifyContent: 'center', backgroundColor: 'var(--success)', borderColor: 'var(--success)' }} onClick={() => handleDemoLogin('renter')}>
-          <Bike size={18} /> Login as Rider (Renter)
+          <Bike size={18} /> Login as Renter
         </button>
         <button className="btn btn-primary" style={{ display: 'flex', gap: 10, justifyContent: 'center', backgroundColor: '#8B5CF6', borderColor: '#8B5CF6' }} onClick={() => handleDemoLogin('passenger')}>
           <User size={18} /> Login as Passenger

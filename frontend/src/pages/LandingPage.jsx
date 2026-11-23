@@ -40,7 +40,7 @@ export default function LandingPage() {
             Your campus. Your ride. Your terms.
           </h1>
           <p className="landing-hero__subtitle">
-            Rent a scooter by the hour, catch a ride, or earn from your own bike — all on campus.
+            Rent a vehicle by the hour, catch a ride, or earn from your own vehicle — all on campus.
           </p>
 
           <div className="landing-hero__cta-group">
@@ -60,7 +60,7 @@ export default function LandingPage() {
       {/* Floating stat bar */}
       <div className="landing-stat-bar">
         {[
-          { number: `${availableBikes.length}+`, label: 'Bikes Available Now' },
+          { number: `${availableBikes.length}+`, label: 'Vehicles Available Now' },
           { number: '৳120', label: 'Avg. Rate / Hour' },
         ].map((stat, i) => (
           <div key={i} className={`landing-stat-bar__item${i > 0 ? ' landing-stat-bar__item--bordered' : ''}`}>
@@ -80,7 +80,7 @@ export default function LandingPage() {
           <div className="landing-featured-bikes__header">
             <div>
               <h2 style={{ marginBottom: 2 }}>Available on campus</h2>
-              <p className="text-muted text-sm">Top-rated scooters ready to ride.</p>
+              <p className="text-muted text-sm">Top-rated vehicles ready to ride.</p>
             </div>
             <button className="btn btn-outline btn-sm landing-featured-bikes__view-all" onClick={() => navigate('/renter/browse')}>
               View all <ArrowRight size={14} />

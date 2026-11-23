@@ -192,7 +192,7 @@ export default function VehicleSettings() {
         <div style={{ background: '#EFF6FF', borderRadius: 12, padding: '14px 16px', marginBottom: 20, fontSize: 13, color: '#1D4ED8', fontWeight: 600, display: 'flex', gap: 8 }}>
           <Radio size={15} style={{ flexShrink: 0, marginTop: 1 }} />
           <div>
-            While your bike is rented, you can <b>live-track its GPS location</b> from the Dashboard. If the renter takes the bike beyond the allowed radius, the app will <b>play an alarm</b> until it returns to the zone.
+            While your vehicle is rented, you can <b>live-track its GPS location</b> from the Dashboard. If the renter takes the vehicle beyond the allowed radius, the app will <b>play an alarm</b> until it returns to the zone.
           </div>
         </div>
 
@@ -251,7 +251,7 @@ export default function VehicleSettings() {
 
         <div style={{ marginTop: 16, fontSize: 12, color: '#6B7280', display: 'flex', alignItems: 'flex-start', gap: 6 }}>
           <MapPin size={12} style={{ flexShrink: 0, marginTop: 1 }} />
-          Alarm triggers when the bike is more than <b style={{ color: '#3B82F6' }}>&nbsp;{settings.maxRadiusKm} km&nbsp;</b> from its home/garage location.
+          Alarm triggers when the vehicle is more than <b style={{ color: '#3B82F6' }}>&nbsp;{settings.maxRadiusKm} km&nbsp;</b> from its home/garage location.
         </div>
       </div>
 
@@ -339,7 +339,7 @@ export default function VehicleSettings() {
           </div>
         ) : (
           <div style={{ padding: '14px 16px', background: '#FEF3C7', borderRadius: 10, fontSize: 13, color: '#92400E', fontWeight: 600 }}>
-            ⚠ Select at least one day to list this bike as available.
+            ⚠ Select at least one day to list this vehicle as available.
           </div>
         )}
       </div>

@@ -50,7 +50,7 @@ function ActiveBikeModal({ bike, request, onClose, defaultShowTracker = false })
   // When accepted but not yet in_use → renter is heading to the bike
   const statusInfo = {
     at_garage: {
-      label: request?.status === 'accepted' ? 'Heading to Bike' : 'At Garage',
+      label: request?.status === 'accepted' ? 'Heading to Vehicle' : 'At Garage',
       color: '#3B82F6', bg: '#DBEAFE',
       icon: request?.status === 'accepted' ? <Navigation size={20} /> : <ParkingSquare size={20} />
     },
@@ -60,7 +60,7 @@ function ActiveBikeModal({ bike, request, onClose, defaultShowTracker = false })
   }[bikeStatus] || { label: 'Active', color: '#3B82F6', bg: '#DBEAFE', icon: <Bike size={20} /> };
 
   const chatUrl = request
-    ? `/chat?name=${encodeURIComponent(request.renterName)}&context=${encodeURIComponent(bike.vehicleName + ' booking')}&avatar=${encodeURIComponent(request.renterAvatar || '')}`
+    ? `/chat/${request.requestId || request.id}?name=${encodeURIComponent(request.renterName)}&context=${encodeURIComponent(bike.vehicleName + ' booking')}&avatar=${encodeURIComponent(request.renterAvatar || '')}`
     : '/chat';
 
   return (
@@ -132,7 +132,7 @@ function ActiveBikeModal({ bike, request, onClose, defaultShowTracker = false })
               onClick={() => setShowTracker(s => !s)}
             >
               <Radio size={16} />
-              {showTracker ? 'Hide Live Tracker' : '📍 Live Track Bike'}
+              {showTracker ? 'Hide Live Tracker' : '📍 Live Track Vehicle'}
             </button>
           )}
 
@@ -161,7 +161,7 @@ function ActiveBikeModal({ bike, request, onClose, defaultShowTracker = false })
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
             <div style={{ background: statusInfo.bg, borderRadius: 14, padding: '14px' }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: statusInfo.color, marginBottom: 6 }}>BIKE STATUS</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: statusInfo.color, marginBottom: 6 }}>VEHICLE STATUS</div>
               <div style={{ color: statusInfo.color, marginBottom: 4 }}>{statusInfo.icon}</div>
               <div style={{ fontWeight: 800, color: statusInfo.color, fontSize: 13 }}>{statusInfo.label}</div>
             </div>
@@ -189,7 +189,7 @@ function ActiveBikeModal({ bike, request, onClose, defaultShowTracker = false })
           </div>
 
           <div style={{ background: 'var(--bg-color)', borderRadius: 14, padding: '14px', marginBottom: 14 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8 }}>BIKE LOCATION</div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8 }}>VEHICLE LOCATION</div>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
               <MapPin size={16} color="var(--primary)" style={{ flexShrink: 0, marginTop: 1 }} />
               <div>
@@ -278,8 +278,15 @@ export default function OwnerDashboard() {
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
   const activeScooters = myListings.filter(l =>
-    l.status === 'active' ||
-    data.incomingRequests.some(r => r.vehicleId === l.id && (r.status === 'accepted' || r.bikeStatus === 'in_use' || r.bikeStatus === 'returning'))
+    data.incomingRequests.some(r =>
+      r.vehicleId === l.id &&
+      (r.status === 'accepted' || r.bikeStatus === 'in_use' || r.bikeStatus === 'returning') &&
+      r.status !== 'expired' &&
+      r.status !== 'completed' &&
+      r.status !== 'cancelled' &&
+      r.status !== 'rejected' &&
+      r.bikeStatus !== 'returned'
+    )
   );
   const pendingRequests = data.incomingRequests.filter(req =>
     req.status === 'pending' &&
@@ -289,7 +296,15 @@ export default function OwnerDashboard() {
   const hasActiveRides = activeScooters.length > 0;
 
   const getActiveRequest = (bikeId) =>
-    data.incomingRequests.find(r => r.vehicleId === bikeId && (r.status === 'accepted' || r.bikeStatus === 'in_use' || r.bikeStatus === 'returning'));
+    data.incomingRequests.find(r =>
+      r.vehicleId === bikeId &&
+      (r.status === 'accepted' || r.bikeStatus === 'in_use' || r.bikeStatus === 'returning') &&
+      r.status !== 'expired' &&
+      r.status !== 'completed' &&
+      r.status !== 'cancelled' &&
+      r.status !== 'rejected' &&
+      r.bikeStatus !== 'returned'
+    );
 
   const earningsPerBike = (data.recentEarnings || []).reduce((acc, e) => {
     acc[e.vehicleId] = (acc[e.vehicleId] || 0) + e.amount;
@@ -298,8 +313,8 @@ export default function OwnerDashboard() {
   const totalEarned = data.totalEarnings || 0;
 
   const statCards = [
-    { label: 'Total Bikes', value: myListings.length, color: '#8B5CF6', bg: '#F5F3FF', route: '/owner/bikes', icon: <Bike size={22} /> },
-    { label: 'Active Now', value: activeScooters.length, color: '#3B82F6', bg: '#EFF6FF', route: '/owner/requests', icon: <Activity size={22} /> },
+    { label: 'Total Vehicles', value: myListings.length, color: '#8B5CF6', bg: '#F5F3FF', route: '/owner/bikes', icon: <Bike size={22} /> },
+    { label: 'Requests', value: pendingRequests.length, color: '#F59E0B', bg: '#FEF3C7', route: '/owner/requests', icon: <Bell size={22} /> },
     { label: 'Total Earned', value: `৳${totalEarned.toLocaleString()}`, color: '#00B14F', bg: '#F0FDF4', route: '/owner/earnings', icon: <DollarSign size={22} /> },
   ];
 
@@ -335,7 +350,7 @@ export default function OwnerDashboard() {
           {pendingRequests.slice(0, 3).map(req => {
             const vehicle = myListings.find(l => l.id === req.vehicleId) || data.listings.find(l => l.id === req.vehicleId);
             const isExpanded = expandedReqId === req.id;
-            const chatUrl = `/chat?name=${encodeURIComponent(req.renterName || 'Renter')}&context=${encodeURIComponent((vehicle?.vehicleName || req.vehicleName || 'Vehicle') + ' booking')}&avatar=${encodeURIComponent(req.renterAvatar || '')}`;
+            const chatUrl = `/chat/${req.requestId || req.id}?name=${encodeURIComponent(req.renterName || 'Renter')}&context=${encodeURIComponent((vehicle?.vehicleName || req.vehicleName || 'Vehicle') + ' booking')}&avatar=${encodeURIComponent(req.renterAvatar || '')}`;
 
             return (
               <div
@@ -370,12 +385,41 @@ export default function OwnerDashboard() {
                       </span>
                     </div>
                     <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 2 }}>
-                      wants to book <strong>{vehicle?.vehicleName || req.vehicleName || 'Your Bike'}</strong>
+                      wants to book <strong>{vehicle?.vehicleName || req.vehicleName || 'Your Vehicle'}</strong>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text-muted)' }}>
                       <span><Clock size={12} style={{ display: 'inline', verticalAlign: -1 }} /> {req.estimatedDuration || req.hours || 2}h</span>
                       <span>·</span>
                       <span style={{ fontWeight: 800, color: 'var(--primary)', fontVariantNumeric: 'tabular-nums' }}>৳{req.estimatedFare || req.totalFare} fare</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Requested Vehicle Preview with Photo */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  padding: '10px 12px',
+                  background: '#F9FAFB',
+                  borderRadius: 12,
+                  border: '1px solid var(--border-color)',
+                  marginBottom: 12
+                }}>
+                  <img
+                    src={vehicle?.image || req.vehicleImage || 'https://images.unsplash.com/photo-1558981806-ec527fa84c39?w=400'}
+                    alt={vehicle?.vehicleName || req.vehicleName || 'Vehicle'}
+                    style={{ width: 68, height: 48, objectFit: 'cover', borderRadius: 8, flexShrink: 0, border: '1px solid var(--border-color)' }}
+                  />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                      Vehicle Requested
+                    </div>
+                    <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {vehicle?.vehicleName || req.vehicleName || 'Vehicle'}
+                    </div>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                      {vehicle?.model ? `${vehicle.model} • ` : ''}Rate: ৳{vehicle?.hourlyRate || req.estimatedFare || 120}/hr
                     </div>
                   </div>
                 </div>
@@ -509,7 +553,7 @@ export default function OwnerDashboard() {
     <div style={{ marginBottom: 36 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
         <Bike size={18} color={activeScooters.length > 0 ? '#3B82F6' : 'var(--text-muted)'} />
-        <h3 style={{ marginBottom: 0, fontSize: 18 }}>Active Bikes</h3>
+        <h3 style={{ marginBottom: 0, fontSize: 18 }}>Active Vehicles</h3>
         {activeScooters.length > 0 && (
           <span style={{ background: '#3B82F6', color: 'white', borderRadius: 999, padding: '1px 8px', fontSize: 12, fontWeight: 700 }}>
             {activeScooters.length}
@@ -524,7 +568,7 @@ export default function OwnerDashboard() {
               <ParkingSquare size={20} color="#3B82F6" />
             </div>
           </div>
-          <div style={{ fontWeight: 600, fontSize: 14 }}>All bikes are parked — no active rides right now.</div>
+          <div style={{ fontWeight: 600, fontSize: 14 }}>All vehicles are parked — no active rides right now.</div>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -538,12 +582,12 @@ export default function OwnerDashboard() {
                 ? { color: '#3B82F6', label: 'Renter Heading Over', bg: '#DBEAFE' }
                 : { color: '#6B7280', label: 'At Garage', bg: '#F3F4F6' },
               in_use: { color: '#10B981', label: 'In Use (Riding)', bg: '#D1FAE5' },
-              returning: { color: '#F59E0B', label: 'Returning Bike', bg: '#FEF3C7' },
+              returning: { color: '#F59E0B', label: 'Returning Vehicle', bg: '#FEF3C7' },
               returned: { color: '#6B7280', label: 'Returned', bg: '#F3F4F6' },
             }[bikeStatus] || { color: '#3B82F6', label: 'Active', bg: '#DBEAFE' };
 
             const chatUrl = activeReq
-              ? `/chat?name=${encodeURIComponent(activeReq.renterName)}&context=${encodeURIComponent(scooter.vehicleName + ' booking')}&avatar=${encodeURIComponent(activeReq.renterAvatar || '')}`
+              ? `/chat/${activeReq.requestId || activeReq.id}?name=${encodeURIComponent(activeReq.renterName)}&context=${encodeURIComponent(scooter.vehicleName + ' booking')}&avatar=${encodeURIComponent(activeReq.renterAvatar || '')}`
               : '/chat';
 
             return (
@@ -639,7 +683,7 @@ export default function OwnerDashboard() {
           <p className="text-muted text-sm" style={{ marginBottom: 0 }}>Welcome back, {user.name.split(' ')[0]}!</p>
         </div>
         <button className="btn btn-primary btn-sm" style={{ width: 'auto', flexShrink: 0 }} onClick={() => navigate('/owner/create')}>
-          <PlusCircle size={16} /> Add a Bike
+          <PlusCircle size={16} /> Add a Vehicle
         </button>
       </div>
 
@@ -683,7 +727,7 @@ export default function OwnerDashboard() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <Bike size={18} color="#8B5CF6" />
-            <h3 style={{ marginBottom: 0, fontSize: 18 }}>Listed Bikes</h3>
+            <h3 style={{ marginBottom: 0, fontSize: 18 }}>Listed Vehicles</h3>
             <span style={{ background: '#EDE9FE', color: '#5B21B6', borderRadius: 999, padding: '1px 8px', fontSize: 12, fontWeight: 700 }}>
               {myListings.length}
             </span>
@@ -701,7 +745,7 @@ export default function OwnerDashboard() {
               </div>
             </div>
             <h3 style={{ fontSize: 17, marginBottom: 6 }}>No listings yet</h3>
-            <p className="text-muted text-sm" style={{ marginBottom: 16 }}>List your first bike and start earning today.</p>
+            <p className="text-muted text-sm" style={{ marginBottom: 16 }}>List your first vehicle and start earning today.</p>
             <button className="btn btn-primary" style={{ width: 'auto' }} onClick={() => navigate('/owner/create')}>Create First Listing</button>
           </div>
         ) : (

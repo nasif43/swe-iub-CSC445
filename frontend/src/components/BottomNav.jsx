@@ -10,7 +10,7 @@ export default function BottomNav() {
   const items = {
     owner: [
       { to: '/owner/dashboard', label: 'Home', icon: Home },
-      { to: '/owner/bikes', label: 'Bikes', icon: Bike },
+      { to: '/owner/bikes', label: 'Vehicles', icon: Bike },
       { to: '/owner/requests', label: 'Requests', icon: Inbox },
       { to: '/owner/earnings', label: 'Earnings', icon: Wallet },
       { to: '/profile', label: 'Profile', icon: CircleUserRound },

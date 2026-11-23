@@ -54,7 +54,7 @@ export default function Browse() {
     );
     
     if (hasActiveBooking) {
-      toast.error('Booking in progress', 'You must complete or cancel your current ride before booking another bike.');
+      toast.error('Booking in progress', 'You must complete or cancel your current ride before booking another vehicle.');
       navigate('/renter/requests');
       return;
     }
@@ -69,15 +69,15 @@ export default function Browse() {
     }
     const isSaved = data.savedBikes.includes(bikeId);
     toggleSavedBike(bikeId);
-    toast[isSaved ? 'info' : 'success'](isSaved ? 'Removed from saved' : 'Bike saved', isSaved ? '' : 'Found it in your Saved tab.');
+    toast[isSaved ? 'info' : 'success'](isSaved ? 'Removed from saved' : 'Vehicle saved', isSaved ? '' : 'Found it in your Saved tab.');
   };
 
   return (
     <div style={{ maxWidth: 900, margin: '0 auto' }}>
       {/* Search */}
       <div style={{ marginBottom: 14 }}>
-        <h2 style={{ marginBottom: 4 }}>Browse bikes</h2>
-        <p className="text-muted text-sm" style={{ marginBottom: 14 }}>Rent a bike by the hour, all on campus.</p>
+        <h2 style={{ marginBottom: 4 }}>Browse vehicles</h2>
+        <p className="text-muted text-sm" style={{ marginBottom: 14 }}>Rent a vehicle by the hour, all on campus.</p>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center', background: 'var(--surface)', border: '1.5px solid var(--border-color)', borderRadius: 12, padding: '10px 14px', boxShadow: 'var(--shadow-sm)' }}>
           <Search size={19} color="var(--text-muted)" />
           <input
@@ -112,7 +112,7 @@ export default function Browse() {
           <div style={{ width: 56, height: 56, margin: '0 auto 16px', borderRadius: 16, background: 'var(--primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Bike size={28} color="var(--primary)" />
           </div>
-          <h3>No bikes found</h3>
+          <h3>No vehicles found</h3>
           <p>Try a different search term or check back soon.</p>
         </div>
       ) : (
@@ -126,7 +126,7 @@ export default function Browse() {
                 </div>
                 <button
                   onClick={() => handleSave(bike.id)}
-                  aria-label={isAuthenticated && data.savedBikes.includes(bike.id) ? 'Remove from saved' : 'Save bike'}
+                  aria-label={isAuthenticated && data.savedBikes.includes(bike.id) ? 'Remove from saved' : 'Save vehicle'}
                   style={{
                     position: 'absolute', top: 8, right: 8,
                     background: 'rgba(255,255,255,0.95)', padding: 8, borderRadius: '50%',

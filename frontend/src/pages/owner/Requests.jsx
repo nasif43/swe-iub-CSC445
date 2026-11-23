@@ -70,6 +70,35 @@ export default function Requests() {
             </div>
           </div>
 
+          {/* Vehicle photo preview */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            padding: '10px 12px',
+            background: '#F9FAFB',
+            borderRadius: 12,
+            border: '1px solid var(--border-color)',
+            marginTop: 12
+          }}>
+            <img
+              src={vehicle?.image || req.vehicleImage || 'https://images.unsplash.com/photo-1558981806-ec527fa84c39?w=400'}
+              alt={vehicle?.vehicleName || req.vehicleName || 'Vehicle'}
+              style={{ width: 68, height: 48, objectFit: 'cover', borderRadius: 8, flexShrink: 0, border: '1px solid var(--border-color)' }}
+            />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                Vehicle Requested
+              </div>
+              <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {vehicle?.vehicleName || req.vehicleName || 'Vehicle'}
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                {vehicle?.model ? `${vehicle.model} • ` : ''}Rate: ৳{vehicle?.hourlyRate || req.estimatedFare || 120}/hr
+              </div>
+            </div>
+          </div>
+
           {isIncoming && !isAccepted && (
             <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
               <button
@@ -82,7 +111,10 @@ export default function Requests() {
               <button
                 className="btn btn-outline btn-sm"
                 style={{ width: 'auto', flex: 1 }}
-                onClick={(e) => { e.stopPropagation(); navigate(`/chat/${req.id}`); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`/chat/${req.requestId || req.id}?name=${encodeURIComponent(req.renterName || 'Renter')}&context=${encodeURIComponent((vehicle?.vehicleName || req.vehicleName || 'Vehicle') + ' booking')}&avatar=${encodeURIComponent(req.renterAvatar || '')}`);
+                }}
               >
                 <MessageCircle size={16} /> Chat
               </button>
@@ -145,7 +177,11 @@ export default function Requests() {
             {isAccepted && (
               <>
                 <div style={{ display: 'flex', gap: 10 }}>
-                  <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => navigate(`/chat/${req.id}`)}>
+                  <button
+                    className="btn btn-primary"
+                    style={{ flex: 1 }}
+                    onClick={() => navigate(`/chat/${req.requestId || req.id}?name=${encodeURIComponent(req.renterName || 'Renter')}&context=${encodeURIComponent((vehicle?.vehicleName || req.vehicleName || 'Vehicle') + ' booking')}&avatar=${encodeURIComponent(req.renterAvatar || '')}`)}
+                  >
                     <MessageCircle size={15} /> Message
                   </button>
                   <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => toast.info('Call', `Calling ${req.renterName}...`)}>

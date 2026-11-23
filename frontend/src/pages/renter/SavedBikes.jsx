@@ -14,16 +14,16 @@ export default function SavedBikes() {
         <button onClick={() => navigate(-1)} className="btn btn-outline btn-sm" style={{ width: 'auto' }}>
           <ChevronLeft size={18} /> Back
         </button>
-        <h2 style={{ marginBottom: 0 }}>Saved Bikes</h2>
+        <h2 style={{ marginBottom: 0 }}>Saved Vehicles</h2>
       </div>
 
       {saved.length === 0 ? (
         <div className="empty-state">
           <Bookmark size={64} />
-          <h3>No saved bikes</h3>
-          <p>Bookmark bikes you like while browsing.</p>
+          <h3>No saved vehicles</h3>
+          <p>Bookmark vehicles you like while browsing.</p>
           <button className="btn btn-primary" style={{ width: 'auto', marginTop: 16 }} onClick={() => navigate('/renter/browse')}>
-            Browse Bikes
+            Browse Vehicles
           </button>
         </div>
       ) : (

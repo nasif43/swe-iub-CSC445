@@ -191,7 +191,7 @@ export default function RideSearch() {
             </div>
             <button
               className="btn btn-primary ride-search__msg-btn"
-              onClick={() => navigate(`/chat/${activeRide.id}`)}
+              onClick={() => navigate(`/chat/${activeRide.id}?name=${encodeURIComponent(activeRide.counterOffer?.renterName || 'Tahsin Ahmed (Rider)')}&context=${encodeURIComponent((activeRide.pickup || 'Pickup') + ' → ' + (activeRide.dropoff || 'Dropoff'))}&avatar=${encodeURIComponent(activeRide.counterOffer?.renterAvatar || '')}`)}
             >
               <MessageCircle size={16} /> Message
             </button>

@@ -43,9 +43,30 @@ const DEMO_USERS = {
 };
 
 export const AuthProvider = ({ children }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [role, setRole] = useState('guest');
-  const [user, setUser] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    try {
+      return localStorage.getItem('ourride_auth') === 'true';
+    } catch (_) {
+      return false;
+    }
+  });
+  const [role, setRole] = useState(() => {
+    try {
+      return localStorage.getItem('ourride_role') || 'renter';
+    } catch (_) {
+      return 'renter';
+    }
+  });
+  const [user, setUser] = useState(() => {
+    try {
+      const isAuth = localStorage.getItem('ourride_auth') === 'true';
+      if (!isAuth) return null;
+      const savedRole = localStorage.getItem('ourride_role') || 'renter';
+      return DEMO_USERS[savedRole] || DEMO_USERS.renter;
+    } catch (_) {
+      return null;
+    }
+  });
   const [data, setData] = useState(initialMockData);
   const [activeRentals, setActiveRentals] = useState([]);
   const [renterBookingRequests, setRenterBookingRequests] = useState([]);
@@ -128,6 +149,10 @@ export const AuthProvider = ({ children }) => {
 
   const login = (selectedRole = 'renter') => {
     const persona = DEMO_USERS[selectedRole] || DEMO_USERS.renter;
+    try {
+      localStorage.setItem('ourride_auth', 'true');
+      localStorage.setItem('ourride_role', selectedRole);
+    } catch (_) {}
     setIsAuthenticated(true);
     setRole(selectedRole);
     setUser(persona);
@@ -135,6 +160,10 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
+    try {
+      localStorage.removeItem('ourride_auth');
+      localStorage.removeItem('ourride_role');
+    } catch (_) {}
     await supabase.auth.signOut();
     setIsAuthenticated(false);
     setRole('guest');
@@ -148,16 +177,54 @@ export const AuthProvider = ({ children }) => {
   const toggleRole = (newRole) => {
     if (!isAuthenticated) return;
     const persona = DEMO_USERS[newRole] || DEMO_USERS.renter;
+    try {
+      localStorage.setItem('ourride_role', newRole);
+    } catch (_) {}
     setRole(newRole);
     setUser(persona);
     loadServerData(persona.id);
   };
 
+  // Cross-tab broadcast listener for instant sync between 2 tabs (e.g. Owner and Renter open on same PC)
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    let bc;
+    try {
+      bc = new BroadcastChannel('ourride_chat_channel');
+      bc.onmessage = (event) => {
+        if (event.data?.type === 'NEW_MESSAGE' && event.data?.message) {
+          const incoming = event.data.message;
+          setMessages(prev => (prev.some(m => m.id === incoming.id) ? prev : [...prev, incoming]));
+        }
+      };
+    } catch (_) {}
+
+    const handleStorage = (e) => {
+      if (e.key === 'ourride_cross_tab_msg' && e.newValue) {
+        try {
+          const incoming = JSON.parse(e.newValue);
+          setMessages(prev => (prev.some(m => m.id === incoming.id) ? prev : [...prev, incoming]));
+        } catch (_) {}
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+
+    return () => {
+      if (bc) bc.close();
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, []);
+
   // Real-time cross-device sync
   useEffect(() => {
     if (!isAuthenticated || !user) return undefined;
     let timer;
-    const handleChange = () => {
+    const handleChange = (payload) => {
+      // Immediate low-latency message arrival from another device via Supabase Realtime
+      if (payload?.table === 'messages' && payload?.eventType === 'INSERT' && payload?.new) {
+        const newMsg = api.mapMessage(payload.new);
+        setMessages(prev => (prev.some(m => m.id === newMsg.id) ? prev : [...prev, newMsg]));
+      }
       clearTimeout(timer);
       timer = setTimeout(() => loadServerData(user.id), 400);
     };
@@ -680,18 +747,41 @@ export const AuthProvider = ({ children }) => {
 
   // === Messages ===
   const addMessage = (chatId, text, senderId) => {
-    const msg = { id: api.newId('msg'), chatId, text, senderId, timestamp: new Date().toISOString() };
-    sync(
-      () => setMessages(prev => [...prev, msg]),
-      () => api.apiSendMessage(msg),
-      snapshot()
-    );
+    if (!text || !text.trim()) return;
+    const cleanText = text.trim();
+    const effectiveSenderId = senderId || user?.id || (role === 'owner' ? 'u1' : 'u_renter');
+
+    const msg = {
+      id: api.newId('msg'),
+      chatId,
+      text: cleanText,
+      senderId: effectiveSenderId,
+      timestamp: new Date().toISOString()
+    };
+
+    // 1. Optimistic local update
+    setMessages(prev => (prev.some(m => m.id === msg.id) ? prev : [...prev, msg]));
+
+    // 2. Cross-tab instant broadcast (0ms latency between tabs on same machine)
+    try {
+      const bc = new BroadcastChannel('ourride_chat_channel');
+      bc.postMessage({ type: 'NEW_MESSAGE', message: msg });
+      bc.close();
+    } catch (_) {}
+    try {
+      localStorage.setItem('ourride_cross_tab_msg', JSON.stringify(msg));
+    } catch (_) {}
+
+    // 3. Supabase persistence
+    api.apiSendMessage(msg).catch(err => {
+      console.warn('apiSendMessage note (persisted locally in session):', err);
+    });
   };
 
   return (
     <AuthContext.Provider value={{
       isAuthenticated, role, user, data,
-      activeRentals, activePassengerRides, messages,
+      activeRentals, activePassengerRides, messages, setMessages,
       renterBookingRequests,
       toggleRole, logout, login, loginWithOAuth,
       addListing, updateListing,
