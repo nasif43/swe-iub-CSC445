@@ -1,15 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { ChevronLeft, Save, Clock, MapPin, DollarSign, Sliders, CalendarDays, Lock, CheckCircle2, Radio } from 'lucide-react';
+import { ChevronLeft, Save, Clock, MapPin, DollarSign, Sliders, CalendarDays, Lock, CheckCircle2, Radio, Trash2, Camera, CarFront } from 'lucide-react';
+import { useToast } from '../../components/ui/Toast';
 
 const ALL_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const DEFAULT_SLOT = { from: '08:00', to: '20:00' };
 
 export default function VehicleSettings() {
   const { id } = useParams();
-  const { data, updateListing } = useAuth();
+  const { data, updateListing, deleteListing } = useAuth();
   const navigate = useNavigate();
+  const toast = useToast();
 
   const vehicle = data.listings.find(l => l.id === id);
   const [settings, setSettings] = useState(null);
@@ -29,6 +31,8 @@ export default function VehicleSettings() {
       });
 
       setSettings({
+        vehicleName: vehicle.vehicleName || '',
+        image: vehicle.image || '',
         isAvailable: vehicle.isAvailable,
         autoAccept: vehicle.autoAccept,
         hourlyRate: vehicle.hourlyRate,
@@ -42,7 +46,12 @@ export default function VehicleSettings() {
 
   if (!vehicle || !settings) return <div className="container">Vehicle not found</div>;
 
-  if (vehicle.status === 'active') {
+  const isVehicleActive = vehicle.status === 'active' || (data.incomingRequests || []).some(
+    r => (r.bikeId === id || r.listingId === id || r.vehicleId === id) &&
+         (r.status === 'accepted' || r.status === 'active' || r.bikeStatus === 'in_use' || r.bikeStatus === 'returning')
+  );
+
+  if (isVehicleActive) {
     return (
       <div style={{ maxWidth: 640, margin: '0 auto' }}>
         <button className="btn btn-ghost" style={{ width: 'auto', marginBottom: 20 }} onClick={() => navigate('/owner/bikes')}>
@@ -55,8 +64,8 @@ export default function VehicleSettings() {
               <Lock size={28} color="var(--error)" />
             </div>
           </div>
-          <h3 style={{ color: 'var(--error)' }}>Settings Locked</h3>
-          <p className="text-muted">This vehicle is currently on an active ride. Settings are locked until the trip is completed.</p>
+          <h3 style={{ color: 'var(--error)' }}>Vehicle Locked</h3>
+          <p className="text-muted">This vehicle is currently on an active ride. Editing its photo, name, settings, or deleting it is locked until the trip is completed.</p>
           <button className="btn btn-outline" style={{ marginTop: 20, width: 'auto' }} onClick={() => navigate('/owner/dashboard')}>
             Back to Dashboard
           </button>
@@ -89,15 +98,43 @@ export default function VehicleSettings() {
     }));
   };
 
+  const handlePhotoUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSettings(s => ({ ...s, image: reader.result }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSave = () => {
+    const updatedName = settings.vehicleName.trim() || vehicle.vehicleName;
     updateListing(id, {
       ...settings,
+      vehicleName: updatedName,
+      image: settings.image || vehicle.image,
       hourlyRate: Number(settings.hourlyRate),
       wearTearRate: Number(settings.wearTearRate),
       maxRadiusKm: Number(settings.maxRadiusKm),
     });
     setSaved(true);
+    toast.success('Vehicle Updated', 'Vehicle details and settings have been saved.');
     setTimeout(() => setSaved(false), 2000);
+  };
+
+  const handleDelete = () => {
+    if (isVehicleActive) {
+      toast.error('Action Denied', 'Cannot delete a vehicle while it is on an active ride.');
+      return;
+    }
+    const confirmed = window.confirm(`Are you sure you want to delete "${settings?.vehicleName || vehicle.vehicleName}"? This will permanently remove it from your fleet.`);
+    if (confirmed) {
+      deleteListing(id);
+      toast.info('Vehicle Deleted', `"${vehicle.vehicleName}" has been removed.`);
+      navigate('/owner/bikes');
+    }
   };
 
   const SectionTitle = ({ icon, title }) => (
@@ -137,13 +174,78 @@ export default function VehicleSettings() {
         <ChevronLeft size={18} /> Back to My Fleet
       </button>
 
-      <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', marginBottom: 28 }}>
-        <img src={vehicle.image} alt={vehicle.vehicleName} style={{ width: 80, height: 56, objectFit: 'cover', borderRadius: 12, flexShrink: 0 }} />
-        <div>
-          <h2 style={{ marginBottom: 4 }}>{vehicle.vehicleName}</h2>
+      <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 24 }}>
+        <img src={settings.image || vehicle.image} alt={settings.vehicleName || vehicle.vehicleName} style={{ width: 80, height: 56, objectFit: 'cover', borderRadius: 12, flexShrink: 0 }} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <h2 style={{ marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{settings.vehicleName || vehicle.vehicleName}</h2>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text-muted)' }}>
             <MapPin size={13} /> {vehicle.location}
           </div>
+        </div>
+      </div>
+
+      {/* ── Vehicle Details (Edit Photo & Name) ── */}
+      <div style={{ background: 'white', borderRadius: 20, border: '1px solid var(--border-color)', padding: '24px 28px', boxShadow: 'var(--shadow-sm)', marginBottom: 16 }}>
+        <SectionTitle icon={<CarFront size={17} />} title="Vehicle Details" />
+
+        {/* Photo Upload */}
+        <div style={{ marginBottom: 20 }}>
+          <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>
+            Vehicle Photo
+          </label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div style={{ position: 'relative', width: 120, height: 84, borderRadius: 12, overflow: 'hidden', border: '1px solid var(--border-color)', flexShrink: 0, background: '#F3F4F6' }}>
+              <img
+                src={settings.image || vehicle.image}
+                alt="Vehicle Preview"
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+              <label
+                htmlFor="vehicle-photo-upload"
+                style={{
+                  position: 'absolute', bottom: 6, right: 6, background: 'rgba(0,0,0,0.7)',
+                  color: 'white', borderRadius: '50%', width: 28, height: 28, display: 'flex',
+                  alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.3)'
+                }}
+                title="Change Photo"
+              >
+                <Camera size={14} />
+              </label>
+              <input
+                id="vehicle-photo-upload"
+                type="file"
+                accept="image/*"
+                onChange={handlePhotoUpload}
+                style={{ display: 'none' }}
+              />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <label
+                htmlFor="vehicle-photo-upload"
+                className="btn btn-outline btn-sm"
+                style={{ width: 'auto', display: 'inline-flex', alignItems: 'center', gap: 6, cursor: 'pointer', marginBottom: 6 }}
+              >
+                <Camera size={15} /> Change Photo
+              </label>
+              <div className="text-muted text-sm">JPG, PNG, or WebP. Choose a clear photo of your vehicle.</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Vehicle Name */}
+        <div>
+          <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>
+            Vehicle Name *
+          </label>
+          <input
+            type="text"
+            className="input"
+            value={settings.vehicleName}
+            onChange={e => setSettings(s => ({ ...s, vehicleName: e.target.value }))}
+            placeholder="e.g. Yamaha R15 V3"
+            required
+          />
         </div>
       </div>
 
@@ -346,11 +448,31 @@ export default function VehicleSettings() {
 
       <button
         className="btn btn-primary"
-        style={{ width: '100%', padding: '14px', fontSize: 16 }}
+        style={{ width: '100%', padding: '14px', fontSize: 16, marginBottom: 16 }}
         onClick={handleSave}
       >
         {saved ? <><CheckCircle2 size={18} /> Saved!</> : <><Save size={18} /> Save Settings</>}
       </button>
+
+      {/* ── Danger Zone: Delete Vehicle ── */}
+      <div style={{ background: '#FFF1F2', borderRadius: 20, border: '1px solid #FECDD3', padding: '20px 24px', marginTop: 12 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+          <div>
+            <div style={{ fontWeight: 700, color: '#9F1239', fontSize: 15, marginBottom: 2 }}>Delete Vehicle</div>
+            <div style={{ fontSize: 13, color: '#BE123C' }}>Permanently remove this vehicle from your fleet. This cannot be undone.</div>
+          </div>
+          <button
+            onClick={handleDelete}
+            style={{
+              background: '#E11D48', color: 'white', border: 'none', borderRadius: 10,
+              padding: '9px 16px', fontWeight: 700, fontSize: 13, display: 'inline-flex',
+              alignItems: 'center', gap: 6, cursor: 'pointer',
+            }}
+          >
+            <Trash2 size={16} /> Delete Vehicle
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

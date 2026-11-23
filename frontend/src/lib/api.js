@@ -428,6 +428,8 @@ export async function apiCreateListing(listing) {
 }
 
 const LISTING_PATCH_MAP = {
+  vehicleName: 'vehicle_name',
+  image: 'image',
   hourlyRate: 'hourly_rate',
   wearTearRate: 'wear_tear_rate',
   maxRadiusKm: 'max_radius_km',
@@ -452,6 +454,14 @@ export async function apiUpdateListing(id, updates) {
   const { data, error } = await supabase.from('listings').update(patch).eq('id', id).select().single();
   if (error) throw error;
   return mapListing(data);
+}
+
+export async function apiDeleteListing(id) {
+  try {
+    await supabase.from('saved_bikes').delete().eq('listing_id', id);
+  } catch (_) {}
+  const { error } = await supabase.from('listings').delete().eq('id', id);
+  if (error) throw error;
 }
 
 // ---------------------------------------------------------------------------

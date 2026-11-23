@@ -271,6 +271,19 @@ export const AuthProvider = ({ children }) => {
     );
   };
 
+  const deleteListing = (id) => {
+    const snap = snapshot();
+    sync(
+      () => setData(prev => ({
+        ...prev,
+        listings: prev.listings.filter(l => l.id !== id),
+        savedBikes: (prev.savedBikes || []).filter(bId => bId !== id)
+      })),
+      () => api.apiDeleteListing(id),
+      snap
+    );
+  };
+
   // === Booking Requests ===
   const addBookingRequest = (req) => {
     pendingOwnerReqRef.current = req;
@@ -784,7 +797,7 @@ export const AuthProvider = ({ children }) => {
       activeRentals, activePassengerRides, messages, setMessages,
       renterBookingRequests,
       toggleRole, logout, login, loginWithOAuth,
-      addListing, updateListing,
+      addListing, updateListing, deleteListing,
       addBookingRequest, updateBookingStatus, acceptBookingRequest,
       addRenterBookingRequest, updateRenterBookingStatus, cancelBookingRequest,
       submitBeforePhoto, submitAfterPhoto, completeTrip, requestMoreTime,

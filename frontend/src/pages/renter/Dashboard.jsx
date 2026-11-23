@@ -56,68 +56,57 @@ export default function RenterDashboard() {
   const nearby = data.listings.filter(l => l.isAvailable && l.status === 'available' && l.ownerId !== user?.id).slice(0, 4);
 
   const statCards = [
-    { icon: <Map size={20} color="var(--forest)" />, label: 'Past Trips', value: tripCount, route: '/renter/trips' },
-    { icon: <Bookmark size={20} color="var(--accent-purple)" />, label: 'Saved', value: savedCount, route: '/renter/saved' },
-    { icon: <Star size={20} color="#F59E0B" />, label: 'Rating', value: rating.toFixed(1), route: '/renter/ratings' },
+    { label: 'Past Trips', value: tripCount, color: 'var(--forest)', bg: '#ECFDF5', route: '/renter/trips', icon: <Map size={20} /> },
+    { label: 'Saved', value: savedCount, color: 'var(--accent-purple)', bg: '#F5F3FF', route: '/renter/saved', icon: <Bookmark size={20} /> },
+    { label: 'Ratings', value: rating.toFixed(1), color: '#F59E0B', bg: '#FEF3C7', route: '/renter/ratings', icon: <Star size={20} /> },
+    { label: 'Requests', value: pendingRequests.length, color: '#3B82F6', bg: '#EFF6FF', route: '/renter/requests', icon: <Clock size={20} /> },
   ];
 
   return (
     <div style={{ maxWidth: 900, margin: '0 auto', paddingTop: 12, paddingBottom: 32 }}>
 
-      {/* 1. DASHBOARD GRID — FIRST THING ON THE PAGE (EVEN IF THERE IS AN ACTIVE RIDE) */}
-      <div className="dashboard-grid" style={{ marginBottom: 16 }}>
-        {statCards.map(card => (
-          <div
-            key={card.label}
-            onClick={() => navigate(card.route)}
-            className="stat-card"
-            style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12 }}
-          >
-            {card.icon}
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div className="text-muted text-sm">{card.label}</div>
-              <div style={{ fontSize: 22, fontWeight: 800, lineHeight: 1.2, fontVariantNumeric: 'tabular-nums' }}>{card.value}</div>
-            </div>
-            <ChevronRight size={16} color="var(--text-light)" />
-          </div>
-        ))}
+      {/* Top Bar with Find a Vehicle button */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <h2 style={{ marginBottom: 2 }}>Renter Dashboard</h2>
+          <p className="text-muted text-sm" style={{ marginBottom: 0 }}>Welcome back, {user?.name ? user.name.split(' ')[0] : 'Renter'}!</p>
+        </div>
+        <button className="btn btn-primary btn-sm" style={{ width: 'auto', flexShrink: 0 }} onClick={() => navigate('/renter/browse')}>
+          <Search size={16} /> Find a Vehicle
+        </button>
       </div>
 
-      {/* 2. Quick Actions */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 24 }}>
-        <button
-          onClick={() => navigate('/renter/browse')}
-          style={{
-            background: '#fff', border: '1px solid var(--border-color)', borderRadius: 16,
-            padding: '14px', textAlign: 'left', boxShadow: 'var(--shadow-sm)', minHeight: 84,
-            cursor: 'pointer'
-          }}
-        >
-          <div style={{ width: 38, height: 38, borderRadius: 12, background: 'var(--primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 8, color: 'var(--primary)' }}>
-            <Search size={20} />
+      {/* Stat Cards — Past trips, saved, ratings and requests in 1 line */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 28 }}>
+        {statCards.map(s => (
+          <div
+            key={s.label}
+            onClick={() => s.route && navigate(s.route)}
+            style={{
+              background: 'white',
+              borderRadius: 16,
+              padding: '16px 14px',
+              border: '1px solid var(--border-color)',
+              boxShadow: 'var(--shadow-sm)',
+              cursor: s.route ? 'pointer' : 'default',
+              transition: 'transform 0.15s, box-shadow 0.15s',
+              minWidth: 0,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+              <div style={{ width: 38, height: 38, borderRadius: 12, background: s.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', color: s.color, flexShrink: 0 }}>
+                {s.icon}
+              </div>
+              {s.route && <ChevronRight size={14} color="var(--text-light)" />}
+            </div>
+            <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--text-main)', marginBottom: 2, fontVariantNumeric: 'tabular-nums' }}>
+              {s.value}
+            </div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {s.label}
+            </div>
           </div>
-          <div style={{ fontWeight: 700, fontSize: 14 }}>Find a vehicle</div>
-          <div className="text-light" style={{ fontSize: 12 }}>Browse by the hour</div>
-        </button>
-        <button
-          onClick={() => navigate('/renter/requests')}
-          style={{
-            background: '#fff', border: '1px solid var(--border-color)', borderRadius: 16,
-            padding: '14px', textAlign: 'left', boxShadow: 'var(--shadow-sm)', minHeight: 84,
-            cursor: 'pointer'
-          }}
-        >
-          <div style={{ width: 38, height: 38, borderRadius: 12, background: '#F5F3FF', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 8, color: 'var(--accent-purple)' }}>
-            <Users size={20} />
-          </div>
-          <div style={{ fontWeight: 700, fontSize: 14 }}>
-            Ride requests
-            {data.availableRideRequests.length > 0 && (
-              <span style={{ color: 'var(--primary)', fontWeight: 800 }}> ({data.availableRideRequests.length})</span>
-            )}
-          </div>
-          <div className="text-light" style={{ fontSize: 12 }}>Pick up passengers</div>
-        </button>
+        ))}
       </div>
 
       {/* 3. Active Trip Banner — ONLY valid non-expired active trips (rendered BELOW dashboard grid) */}

@@ -1,11 +1,21 @@
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { TrendingUp, Settings, PlusCircle, MapPin, Bike } from 'lucide-react';
+import { TrendingUp, Settings, PlusCircle, MapPin, Bike, Trash2 } from 'lucide-react';
 import PageHeader from '../../components/ui/PageHeader';
+import { useToast } from '../../components/ui/Toast';
 
 export default function MyBikes() {
-  const { data, user } = useAuth();
+  const { data, user, deleteListing } = useAuth();
   const navigate = useNavigate();
+  const toast = useToast();
+
+  const isVehicleActive = (bike) => {
+    if (bike.status === 'active') return true;
+    return (data.incomingRequests || []).some(
+      r => (r.bikeId === bike.id || r.listingId === bike.id || r.vehicleId === bike.id) &&
+           (r.status === 'accepted' || r.status === 'active' || r.bikeStatus === 'in_use' || r.bikeStatus === 'returning')
+    );
+  };
 
   const myListings = [...data.listings]
     .filter(l => l.ownerId === user.id)
@@ -49,14 +59,15 @@ export default function MyBikes() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {myListings.map(bike => {
             const totalEarned = (earningsPerBike[bike.id] || 0) + (bike.totalBikeEarnings || 0);
-            const st = statusStyle[bike.status] || statusStyle['available'];
+            const active = isVehicleActive(bike);
+            const st = active ? statusStyle['active'] : (statusStyle[bike.status] || statusStyle['available']);
             return (
               <div
                 key={bike.id}
                 onClick={() => navigate(`/owner/settings/${bike.id}`)}
                 style={{
                   background: 'white',
-                  border: `2px solid ${bike.status === 'active' ? '#3B82F6' : 'var(--border-color)'}`,
+                  border: `2px solid ${active ? '#3B82F6' : 'var(--border-color)'}`,
                   borderRadius: 16,
                   padding: '14px',
                   cursor: 'pointer',
@@ -84,9 +95,30 @@ export default function MyBikes() {
                     <span style={{ fontWeight: 800, fontSize: 16, color: '#00B14F', fontVariantNumeric: 'tabular-nums' }}>৳{totalEarned.toLocaleString()}</span>
                     <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>earned</span>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <span style={{ fontWeight: 600, color: 'var(--text-muted)', fontSize: 13 }}>৳{bike.hourlyRate}/hr</span>
-                    <Settings size={16} color="var(--text-muted)" />
+                    <Settings size={16} color="var(--text-muted)" title="Settings & Edit" />
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (active) {
+                          toast.error('Action Denied', 'Cannot delete a vehicle while it is on an active ride.');
+                          return;
+                        }
+                        if (window.confirm(`Are you sure you want to delete "${bike.vehicleName}"?`)) {
+                          deleteListing(bike.id);
+                          toast.info('Vehicle Deleted', `"${bike.vehicleName}" has been removed.`);
+                        }
+                      }}
+                      disabled={active}
+                      style={{
+                        background: 'none', border: 'none', padding: 4, cursor: active ? 'not-allowed' : 'pointer',
+                        color: active ? '#D1D5DB' : '#EF4444', display: 'flex', alignItems: 'center',
+                      }}
+                      title={active ? 'Cannot delete while on an active ride' : 'Delete Vehicle'}
+                    >
+                      <Trash2 size={16} />
+                    </button>
                   </div>
                 </div>
               </div>
